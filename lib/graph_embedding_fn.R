@@ -44,21 +44,22 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
                                       graph.is.directed  =  FALSE,
                                       vert_diss_measure  =  "default",
                                       T.param  =  NULL,
-                                      num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2
+                                      num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
+                                      graph.is.weighted=FALSE
                                       
                                       ){
   
   n <-  nrow(G)
   graph.mode <-   ifelse(graph.is.directed,"directed","undirected")
+  weighted.g <- ifelse(graph.is.weighted,NULL,TRUE)
   
-  Graph.1 <-  graph.empty(directed  =  graph.is.directed)
-  Graph.2 <-  graph.empty(directed  =  graph.is.directed)
+ 
   
   
   #Given adjacency matrix, generate unweighted graph
   print("Using adjacency for computing dissimilarities")
-  Graph.1 <-  graph.adjacency(G, mode =  graph.mode)
-  Graph.2 <-  graph.adjacency(Gp,mode  =  graph.mode)
+  Graph.1 <-  graph.adjacency(G, mode =  graph.mode,weighted=weighted.g)
+  Graph.2 <-  graph.adjacency(Gp,mode  =  graph.mode,weighted=weighted.g)
   #A.M <-   diag(n)
   #A.M[!in.sample.ind[1:n],!in.sample.ind[1:n]] <-   0 # Make sure vertices that are NOT known to be matched
   #are not connected
@@ -94,11 +95,20 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
     D.2  <-   similarity.invlogweighted( Graph.2)
     D.1  <-   2- 2*D.1
     D.2  <-   2- 2*D.2
+  } else if (vert_diss_measure == 'exp_minus'){
+    D.1 <- exp(-1*G/2)
+    D.2 <- exp(-1*Gp/2)    
+  } else if (vert_diss_measure == 'C_dice_weighted'){
+       
+    D.1 <- C_dice_weighted(G)
+    D.2 <- C_dice_weighted(Gp)
   }
   
-  D.1[is.infinite(D.1)] <-  NA
-  D.2[is.infinite(D.2)] <-  NA
-  D.w <-   (D.1+D.2)/2#mapply(min,D.1,D.2)
+  
+  
+  D.1[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
+  D.2[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
+  D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
   
   
   in.sample.ind.half <- in.sample.ind[1:n]
@@ -118,9 +128,8 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
                              separability.entries.w  =  FALSE,
                              assume.matched.for.oos   =   FALSE,
                              w.vals  =  w.vals.vec,
-                             oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time
-                             
-  )	
+                             oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time                             
+  					)	
   J <-  list()
   for (Y.embed in Embed.List){
     
@@ -383,10 +392,16 @@ Embed.Nodes  <-  function(D.omnibus,
     while  (!full.seed.match) {
       embed.dim   <-   embed.dim + 1
       
-      X.embeds <-  JOFC.Insample.Embed(D.in,embed.dim,
+      X.embeds <-  try(JOFC.Insample.Embed(D.in,embed.dim,
                                        w.vals,separability.entries.w,
                                        init.conf  =  init.conf,
-                                       wt.equalize  =  wt.equalize)
+                                       wt.equalize  =  wt.equalize))
+      if (inherits(X.embeds,"try-error")) {
+            print('Unable to embed via smacof')
+        		X.embeds<-list(cmdscale(D.in, k=d.start))
+            embed.dim<-d.start
+		full.seed.match   <-    TRUE
+          }
      
       pw.dist.insample <- as.matrix(dist(X.embeds[[1]]))
       
@@ -398,7 +413,7 @@ Embed.Nodes  <-  function(D.omnibus,
         full.seed.match   <-    TRUE
          print(paste("optimal dim is ", embed.dim))
       }
-      if ((numTrueMatch/n > 0.95)&& (numTrueMatch==prevTrueMatch)) {
+      if (((numTrueMatch/n > 0.95)||(n-numTrueMatch<4))&& (numTrueMatch==prevTrueMatch)) {
         full.seed.match   <-    TRUE
         print(paste("optimal dim is ", embed.dim))
       }
@@ -418,8 +433,8 @@ Embed.Nodes  <-  function(D.omnibus,
       Y.0  <-   matrix(-1,length(in.sample.ind),embed.dim)
       #Vertices are embedded in groups
       for (embed.group in 1:num.embed.groups){
-        sink()
-        sink("Embedding.debug.txt")
+        #sink()
+        #sink("Embedding.debug.txt")
         #embed the next test.m (oos) vertices
         test.m  <-   oos.embed.n.at.a.time 
         if (embed.group == num.embed.groups)
@@ -445,7 +460,7 @@ Embed.Nodes  <-  function(D.omnibus,
                 D.omnibus[oos.sample.indices,oos.sample.indices])
         )
         if (sink.number()>0) sink()
-        sink("Embedding.debug.txt")
+        #sink("Embedding.debug.txt")
         
         
         #Compute Weight matrix corresponding in-sample  entries
@@ -502,7 +517,7 @@ Embed.Nodes  <-  function(D.omnibus,
         print("oos.sample.indices")
         print(oos.sample.indices)
         Y.0[oos.sample.indices,] <-  Y.0.embed
-        sink()
+        #sink()
       }
       Y.oos <- Y.0[all.oos.indices,]
       Y.embeds <-  c(Y.embeds,list(Y.oos))
@@ -511,7 +526,7 @@ Embed.Nodes  <-  function(D.omnibus,
     #sink()
   } 
   print("OOS embedding complete")
-  sink()
+  #sink()
   Y.embeds
   
 }
@@ -608,5 +623,19 @@ diff.dist.fun <-  function(A,T.diff){
   D
 }
 
+C_dice_weighted <- function(W){
+  n<-nrow(W)
+  D<- matrix(0,n,n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      sym_neigh_diff = xor(W[i,]>0 ,W[j,]>0)
+      r_ij= sum((W[i,]+W[j,])*sym_neigh_diff)
+      a_ij <- sum((W[i,]+W[j,])*(W[i,]>0)*(W[j,0]>0))
+      D[i,j] <- (r_ij+2*(W[i,j]==0))/(r_ij+a_ij+2)
+    }
+    
+  }
+	return(D)
+}
 
 

@@ -22,15 +22,16 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       else {
         num_v_to_embed_at_a_time = 1
       }
-      jofc.result<- JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 
+      jofc.result<- try(JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 
                                            d.dim=embed.dim, w.vals.vec=0.99,graph.is.directed=FALSE, 
                                            vert_diss_measure=diss_measure,  T.param  =  NULL,
                                            num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time  )
+				)
      
-      #jofc.result<-try(jofc(G,Gp, in.sample.ind=insample_logic_vec,  d.dim=embed.dim,w.vals.vec=0.9,graph.is.directed=FALSE, oos=TRUE,use.weighted.graph=FALSE))
-      #if (inherits(jofc.result,"try-error")) {
-      #	print('Skipping iteration')
-      #		next}
+            if (inherits(jofc.result,"try-error")) {
+      	print('Skipping iteration')
+		corr.matches[n_v_i,it] <- NA
+      		next}
       
       jofc.res.1<-jofc.result[[1]]
       
@@ -130,30 +131,84 @@ wiki_exp <- function(num_iter,n_vals,embed.dim=13) {
   
 }	
 
-worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE) {
-  #Not yet implemented
+worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default") {
+  
   load("./data/celegansGraph.Rd")
   if (weighted.graph){
     scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
     Ac_graph <- Ac
     Ag_graph <- scale_f*Ag
+	
+
+	#symmetrize
+    Ac_graph <- (Ac_graph+t(Ac_graph))/2
+    Ag_graph <- (Ag_graph+t(Ag_graph))/2
   } else{
   
     Ac_graph<- Ac>0
     Ag_graph<- Ag>0
   }
+  num.cores<-6
+  iter_per_core <- ceiling(num_iter/num.cores)
+  require(doSMP)
   
-  corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,embed.dim,diss_measure="default")
+  workers <- startWorkers(num.cores) # My computer has 2 cores
+  registerDoSMP(workers)
+  corr_match_list<- foreach(i=1:num.cores, .combine="c",.export="run.experiment.JOFC") %dopar% {
+    setwd('~/projects/DataFusion-graphmatch/')
+    library(optmatch)
+    library(igraph)
+    library(MASS)
+    library(MCMCpack)
+    source("./lib/graph_embedding_fn.R")
+    source("./lib/simulation_math_util_fn.R")
+    source("./lib/smacofM.R")
+    source("./lib/oosIM.R")
+    source("./lib/diffusion_distance.R")
+    corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
+						embed.dim,diss_measure=diss_measure)
+  }
   
-  
+  corr.results.avg <- array(0, dim( corr_match_list[[1]]))
+  for (corr.results in corr_match_list){
+    corr.results.avg <- corr.results.avg+corr.results
+  }  
+  corr.results.avg <- corr.results.avg/length( corr_match_list)
+  return (list(avg=corr.results.avg,agg=corr_match_list ))
 }  
 
 
-enron_exp <- function (num_iter,n_vals_nec,embed.dim=6){
+worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default") {
+  
+  load("./data/celegansGraph.Rd")
+  if (weighted.graph){
+    scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
+    Ac_graph <- Ac
+    Ag_graph <- scale_f*Ag
+    
+    
+    #symmetrize
+    Ac_graph <- (Ac_graph+t(Ac_graph))/2
+    Ag_graph <- (Ag_graph+t(Ag_graph))/2
+  } else{
+    
+    Ac_graph<- Ac>0
+    Ag_graph<- Ag>0
+  }
+ 
+    corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
+                                      embed.dim,diss_measure=diss_measure)
+
+  return (corr.matches)
+}
+
+
+
+enron_exp <- function (num_iter,n_vals_vec,embed.dim=2){
   #Not yet implemented
   load("./data/AAA-187As-184x184.Rbin")
   corr.matches<-run.experiment.JOFC(AAA[[130]],AAA[[131]],
-                                    n_vals_vec,num_iter=num_iter,embed.dim,
+                                    n_vals_vec,num_iter=num_iter,embed.dim=embed.dim,
                                     diss_measure="default")
   
 }

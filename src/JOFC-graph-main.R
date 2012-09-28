@@ -1,4 +1,6 @@
 
+
+source("./src/JOFC-graph-experiment-sim-fn.R")
 ####################
 # A smaller graph
 
@@ -55,5 +57,40 @@ for (corr.results in corr.results.list){
   corr.results.avg <- corr.results.avg+corr.results
 }  
 corr.results.avg <- corr.results.avg/length( corr.results.list)
+
+
+
+
+n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
+
+corr.matches<-worm_exp(num_iter=2,n_vals=n_vals_worm,embed.dim=2,
+				weighted.graph=FALSE)
+avg.corr.worm <- corr.matches/(279-n_vals_worm)
+
+
+n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
+
+corr.matches.wt.exp<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
+					weighted.graph=TRUE,diss_measure="exp_minus")
+avg.corr.worm.wt.exp <- corr.matches.wt.exp/(279-n_vals_worm)
+
+n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
+
+corr.matches.wt.dice<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
+					weighted.graph=TRUE,diss_measure="C_dice_weighted")
+avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
+
+
+corr.matches.wt.diff<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
+					weighted.graph=FALSE,diss_measure="diffusion")
+avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
+
+
+
+
+
+n_vals_enron=c(5, 8:20,seq(21,49,3),seq(50,160,10))
+corr.matches.e<-enron_exp(num_iter=5,n_vals=n_vals_enron,embed.dim=2)
+
 
 
