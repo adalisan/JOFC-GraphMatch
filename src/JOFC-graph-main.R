@@ -74,6 +74,19 @@ corr.matches.wt.exp<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
 					weighted.graph=TRUE,diss_measure="exp_minus")
 avg.corr.worm.wt.exp <- corr.matches.wt.exp/(279-n_vals_worm)
 
+
+n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
+
+corr.matches.wt.exp.par<-worm_exp_par(num_iter=12,n_vals=n_vals_worm,embed.dim=2,
+                              weighted.graph=TRUE,diss_measure="exp_minus")
+#avg.corr.worm.wt.exp.par <- corr.matches.wt.exp.par$avg/(279-n_vals_worm)
+
+corr.matches.wt.exp.par$agg
+
+
+
+
+
 n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
 
 corr.matches.wt.dice<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,

@@ -154,7 +154,7 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
   
   workers <- startWorkers(num.cores) # My computer has 2 cores
   registerDoSMP(workers)
-  corr_match_list<- foreach(i=1:num.cores, .combine="c",.export="run.experiment.JOFC") %dopar% {
+  corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
     setwd('~/projects/DataFusion-graphmatch/')
     library(optmatch)
     library(igraph)
@@ -169,12 +169,12 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
 						embed.dim,diss_measure=diss_measure)
   }
   
-  corr.results.avg <- array(0, dim( corr_match_list[[1]]))
-  for (corr.results in corr_match_list){
-    corr.results.avg <- corr.results.avg+corr.results
-  }  
-  corr.results.avg <- corr.results.avg/length( corr_match_list)
-  return (list(avg=corr.results.avg,agg=corr_match_list ))
+  #corr.results.avg <- array(0, dim( corr_match_list[[1]]))
+  #for (corr.results in corr_match_list){
+ #   corr.results.avg <- corr.results.avg+corr.results
+ #}  
+  #corr.results.avg <- corr.results.avg/length( corr_match_list)
+  return (list(agg=corr_match_list ))
 }  
 
 
