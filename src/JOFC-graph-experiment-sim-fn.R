@@ -1,6 +1,6 @@
 
 run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="default",
-                              num_v_to_embed_at_a_time=NULL){
+                              num_v_to_embed_at_a_time=NULL, graph.is.weighted=FALSE){
   
  
   matched.cost<-0.01
@@ -25,7 +25,8 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       jofc.result<- try(JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 
                                            d.dim=embed.dim, w.vals.vec=0.99,graph.is.directed=FALSE, 
                                            vert_diss_measure=diss_measure,  T.param  =  NULL,
-                                           num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time  )
+                                           num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time,
+                                               graph.is.weighted=graph.is.weighted)
 				)
      
             if (inherits(jofc.result,"try-error")) {
@@ -166,7 +167,7 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
     source("./lib/oosIM.R")
     source("./lib/diffusion_distance.R")
     corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
-						embed.dim,diss_measure=diss_measure)
+						embed.dim,diss_measure=diss_measure, graph.is.weighted=weighted.graph)
   }
   
   #corr.results.avg <- array(0, dim( corr_match_list[[1]]))
@@ -197,7 +198,8 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
   }
  
     corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
-                                      embed.dim,diss_measure=diss_measure)
+                                      embed.dim,diss_measure=diss_measure,
+                                      graph.is.weighted=weighted.graph)
 
   return (corr.matches)
 }
