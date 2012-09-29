@@ -45,19 +45,29 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
                                       vert_diss_measure  =  "default",
                                       T.param  =  NULL,
                                       num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
-                                      graph.is.weighted=FALSE
-                                      
+                                      graph.is.weighted=FALSE                                      
                                       ){
   
   n <-  nrow(G)
   graph.mode <-   ifelse(graph.is.directed,"directed","undirected")
-  weighted.g <- ifelse(graph.is.weighted,NULL,TRUE)
+  weighted.g <- graph.is.weighted
+  if (!weighted.g)
+    weighted.g<-NULL
+  print("T.param")
+  print(T.param)
+    
   
  
   
   
   #Given adjacency matrix, generate unweighted graph
-  print("Using adjacency for computing dissimilarities")
+  if (!graph.is.weighted)   print("Using adjacency for computing dissimilarities")
+  else print("Using weighted for computing dissimilarities") 
+  if (isSymmetric(G)) {print("G is symmetric")}
+  else   {print("G is unsymmetric")}
+  
+  if (isSymmetric(Gp)) {print("Gp is symmetric")}
+  else   {print("G is unsymmetric")}
   Graph.1 <-  graph.adjacency(G, mode =  graph.mode,weighted=weighted.g)
   Graph.2 <-  graph.adjacency(Gp,mode  =  graph.mode,weighted=weighted.g)
   #A.M <-   diag(n)
@@ -145,7 +155,6 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
 }
 
 
-
 JOFC.graph <-  function(G,Gp,
                         in.sample.ind,
                         d.dim,
@@ -167,9 +176,6 @@ JOFC.graph.diff <-  function(G,Gp,
                                 graph.is.directed  =  graph.is.directed,vert_diss_measure  =  "diffusion",T.param  =  T.param))
   
 }
-
-
-
 
 
 
@@ -617,8 +623,8 @@ diff.dist <-  function(P){
 }
 
 
-diff.dist.fun <-  function(A,T.diff){
-  P <-  transition.matrix(A,dissimilarity  =  FALSE)
+diff.dist.fun <-  function(A,T.diff,dissimilarity=FALSE){
+  P <-  transition.matrix(A,dissimilarity  =  dissimilarity)
   D <-  diffusion.distance(P, T.diff, directed   =   FALSE)
   D
 }

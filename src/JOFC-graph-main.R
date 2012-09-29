@@ -84,6 +84,32 @@ corr.matches.wt.exp.par<-worm_exp_par(num_iter=12,n_vals=n_vals_worm,embed.dim=2
 corr.matches.wt.exp.par$agg
 
 
+#test
+
+
+n_vals_worm=c(5, 10,30)
+
+corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
+                               weighted.graph=TRUE,diss_measure="C_dice_weighted")
+avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
+
+
+
+corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
+                               weighted.graph=TRUE,diss_measure="exp_minus")
+avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
+
+
+corr.matches.wt.diff<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
+                               weighted.graph=FALSE,diss_measure="diffusion" )
+avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
+
+corr.matches.wt.diff<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
+                               weighted.graph=TRUE,diss_measure="diffusion")
+avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
+
+
+
 
 
 
@@ -97,6 +123,8 @@ avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
 corr.matches.wt.diff<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
 					weighted.graph=FALSE,diss_measure="diffusion")
 avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
+
+
 
 
 

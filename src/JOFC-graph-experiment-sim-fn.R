@@ -24,7 +24,7 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       }
       jofc.result<- try(JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 
                                            d.dim=embed.dim, w.vals.vec=0.99,graph.is.directed=FALSE, 
-                                           vert_diss_measure=diss_measure,  T.param  =  NULL,
+                                           vert_diss_measure=diss_measure,  T.param  =  2,
                                            num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time,
                                                graph.is.weighted=graph.is.weighted)
 				)
@@ -192,9 +192,10 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
     Ac_graph <- (Ac_graph+t(Ac_graph))/2
     Ag_graph <- (Ag_graph+t(Ag_graph))/2
   } else{
-    
-    Ac_graph<- Ac>0
-    Ag_graph<- Ag>0
+    Ac_graph <- (Ac+t(Ac))/2
+    Ag_graph <- (Ag+t(Ag))/2
+    Ac_graph<- (Ac_graph>0)
+    Ag_graph<- (Ag_graph>0)
   }
  
     corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
