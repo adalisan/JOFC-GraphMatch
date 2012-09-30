@@ -46,8 +46,8 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
                                       T.param  =  NULL,
                                       num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
                                       graph.is.weighted=FALSE                                      
-                                      ){
   
+
   n <-  nrow(G)
   graph.mode <-   ifelse(graph.is.directed,"directed","undirected")
   weighted.g <- graph.is.weighted
@@ -112,13 +112,25 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
        
     D.1 <- C_dice_weighted(G)
     D.2 <- C_dice_weighted(Gp)
-  }
+  }                                    ){
+  # In case dissimilarities blow up for diss. measure, put a limit on max 
+  # value for diss.
   
   
+
+if (vert_diss_measure == "diffusion"){
+
+  upper_diss_limit<-min(quantile(c(as.vector(D.1),as.vector(D.2)),
+				 0.99,na.rm=TRUE),1E3)
   
-  D.1[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
-  D.2[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
-  D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
+  D.1[D.1>upper_diss_limit] <- upper_diss_limit
+  D.2[D.2>upper_diss_limit] <- upper_diss_limit
+}
+  D.1.temp<-D.1
+  D.2.temp<-D.2
+  D.1.temp[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
+  D.2.temp[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
+  D.w <-   (D.1.temp+D.2.temp)/2  #mapply(min,D.1,D.2)
   
   
   in.sample.ind.half <- in.sample.ind[1:n]
@@ -394,6 +406,7 @@ Embed.Nodes  <-  function(D.omnibus,
     full.seed.match  <-   FALSE
     embed.dim  <-  d.start
     prevTrueMatch = -1
+    True.match.last.memory <- rep(-1,3)
     X.embeds <- list()
     while  (!full.seed.match) {
       embed.dim   <-   embed.dim + 1
@@ -419,12 +432,14 @@ Embed.Nodes  <-  function(D.omnibus,
         full.seed.match   <-    TRUE
          print(paste("optimal dim is ", embed.dim))
       }
-      if (((numTrueMatch/n > 0.95)||(n-numTrueMatch<4))&& (numTrueMatch==prevTrueMatch)) {
+      if (all( True.match.last.memory== numTrueMatch)) {
         full.seed.match   <-    TRUE
         print(paste("optimal dim is ", embed.dim))
       }
+        True.match.last.memory[1] <-    True.match.last.memory[2]
+        True.match.last.memory[2] <-    True.match.last.memory[3]
+	  True.match.last.memory[3] <-   numTrueMatch
         
-        prevTrueMatch <- numTrueMatch
     }
     # Increment embed.dim by 1 to be on the safe side
     # embed.dim <-embed.dim+1
