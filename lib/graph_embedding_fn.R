@@ -126,11 +126,13 @@ if (vert_diss_measure == "diffusion"){
   D.1[D.1>upper_diss_limit] <- upper_diss_limit
   D.2[D.2>upper_diss_limit] <- upper_diss_limit
 }
-  D.1.temp<-D.1
-  D.2.temp<-D.2
-  D.1.temp[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
-  D.2.temp[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
-  D.w <-   (D.1.temp+D.2.temp)/2  #mapply(min,D.1,D.2)
+  #Should we replace   infinite values of  D.1 and D.2  to large number
+  # or ignore them in embeddin?
+  #D.1.temp<-D.1
+  #D.2.temp<-D.2
+  D.1[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
+  D.2[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
+  D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
   
   
   in.sample.ind.half <- in.sample.ind[1:n]
