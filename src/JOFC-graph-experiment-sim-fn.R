@@ -2,16 +2,16 @@
 run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="default",
                               num_v_to_embed_at_a_time=NULL, graph.is.weighted=FALSE){
   
- 
+  
   matched.cost<-0.01
   N<-nrow(G)
   corr.matches =matrix(0,length(n_vals),num_iter)
-   
+  
   
   for (n_v_i in 1:length(n_vals)){
     n_v = n_vals[n_v_i]
     for (it in 1:num_iter){
-       init.time <- proc.time()
+      init.time <- proc.time()
       #insample_logic_vec <- 1:N %in% 1:n_v
       insample_logic_vec <- 1:N %in% sample(1:N,n_v,replace=FALSE)
       print(insample_logic_vec)
@@ -23,24 +23,24 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
         num_v_to_embed_at_a_time = 1
       }
       jofc.result<- try(JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 
-                                           d.dim=embed.dim, w.vals.vec=0.99,graph.is.directed=FALSE, 
-                                           vert_diss_measure=diss_measure,  T.param  =  2,
-                                           num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time,
+                                               d.dim=embed.dim, w.vals.vec=0.99,graph.is.directed=FALSE, 
+                                               vert_diss_measure=diss_measure,  T.param  =  2,
+                                               num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time,
                                                graph.is.weighted=graph.is.weighted)
-				)
-     
-            if (inherits(jofc.result,"try-error")) {
-      	print('Skipping iteration')
-		corr.matches[n_v_i,it] <- NA
-      		next}
+      )
+      
+      if (inherits(jofc.result,"try-error")) {
+        print('Skipping iteration')
+        corr.matches[n_v_i,it] <- NA
+        next}
       
       jofc.res.1<-jofc.result[[1]]
       
       M.result.1<-try(solveMarriage(jofc.res.1))
       
-       end.time <- proc.time()
-       
-       print(paste("run took ", end.time[2]-init.time[2] ," s ",sep="",collapse =""))
+      end.time <- proc.time()
+      
+      print(paste("run took ", end.time[2]-init.time[2] ," s ",sep="",collapse =""))
       if (inherits(M.result.1,"try-error"))    {  
         print('Skipping iteration')
         next}
@@ -49,9 +49,9 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       corr.matches[n_v_i,it] = NumofTruePairing.1
     }
   }
-#   save( list=c("corr.matches"),
-#         file=paste("./logs/JOFC_graph",Sys.time(),floor(runif(n=1,max=100))), 
-#         ascii=TRUE)
+  #   save( list=c("corr.matches"),
+  #         file=paste("./logs/JOFC_graph",Sys.time(),floor(runif(n=1,max=100))), 
+  #         ascii=TRUE)
   return(corr.matches)
 }
 
@@ -71,7 +71,7 @@ bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure,it.per.G=1,
   
   
   corr.match.array.mc<-array(0,dim=c(length(n_vals),npert))
-
+  
   for(ipert in 1:npert)
   {
     G<-ER(n,0.5)
@@ -80,7 +80,7 @@ bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure,it.per.G=1,
     corr.matches<-run.experiment.JOFC(G,Gp,n_vals,num_iter=it.per.G,
                                       embed.dim=embed.dim, diss_measure=diss_measure,
                                       num_v_to_embed_at_a_time = num_v_to_embed_at_a_time
-                                        )
+    )
     corr.match.array.mc[,ipert] <- corr.matches
   }
   return (corr.match.array.mc)
@@ -100,8 +100,8 @@ bitflip_exp<-function (nmc,pert,n,n_vals,embed.dim=6)
   
   sfStop()
   for (t in 1:length(corr.match.list))
-      corr.match.array[,t,] <- corr.match.list[[t]]
-     
+    corr.match.array[,t,] <- corr.match.list[[t]]
+  
   
   corr.match.array<-sweep(corr.match.array, 1, n-n_vals, "/")
   print(corr.match.array)
@@ -139,21 +139,21 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
     scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
     Ac_graph <- Ac
     Ag_graph <- scale_f*Ag
-	
-
-	#symmetrize
+    
+    
+    #symmetrize
     Ac_graph <- (Ac_graph+t(Ac_graph))/2
     Ag_graph <- (Ag_graph+t(Ag_graph))/2
   } else{
-  
+    
     Ac_graph<- Ac>0
     Ag_graph<- Ag>0
   }
-  num.cores<-6
+  num.cores<-4
   iter_per_core <- ceiling(num_iter/num.cores)
   require(doSMP)
   
-  workers <- startWorkers(num.cores) # My computer has 2 cores
+  workers <- startWorkers(num.cores) # My computer has 4 cores
   registerDoSMP(workers)
   corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
     setwd('~/projects/DataFusion-graphmatch/')
@@ -167,13 +167,13 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
     source("./lib/oosIM.R")
     source("./lib/diffusion_distance.R")
     corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
-						embed.dim,diss_measure=diss_measure, graph.is.weighted=weighted.graph)
+                                      embed.dim,diss_measure=diss_measure, graph.is.weighted=weighted.graph)
   }
   
   #corr.results.avg <- array(0, dim( corr_match_list[[1]]))
   #for (corr.results in corr_match_list){
- #   corr.results.avg <- corr.results.avg+corr.results
- #}  
+  #   corr.results.avg <- corr.results.avg+corr.results
+  #}  
   #corr.results.avg <- corr.results.avg/length( corr_match_list)
   return (list(agg=corr_match_list ))
 }  
@@ -197,11 +197,11 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
     Ac_graph<- (Ac_graph>0)
     Ag_graph<- (Ag_graph>0)
   }
- 
-    corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
-                                      embed.dim,diss_measure=diss_measure,
-                                      graph.is.weighted=weighted.graph)
-
+  
+  corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
+                                    embed.dim,diss_measure=diss_measure,
+                                    graph.is.weighted=weighted.graph)
+  
   return (corr.matches)
 }
 
