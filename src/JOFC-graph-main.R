@@ -113,11 +113,13 @@ avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
 
 
 
-n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
+n_vals_worm=c(5, seq(8,20,2),seq(21,49,3),seq(50,200,10))
 
-corr.matches.wt.dice<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
+corr.matches.wt.dice<-worm_exp(num_iter=50,n_vals=n_vals_worm,embed.dim=2,
 					weighted.graph=TRUE,diss_measure="C_dice_weighted")
 avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
+
+
 
 
 corr.matches.wt.diff<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
