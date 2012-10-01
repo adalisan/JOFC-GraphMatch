@@ -207,7 +207,7 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
   
   
   D.Mats<-graph2dissimilarity.many (G,Gp,corr.list,
-                                    in.sample.ind.1,in.sample.ind.2
+                                    in.sample.ind.1,in.sample.ind.2,
                                     d.dim,
                                     w.vals.vec,
                                     graph.mode,

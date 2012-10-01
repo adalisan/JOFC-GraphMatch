@@ -39,10 +39,10 @@ perturbG <-  function(G,q){
 
 
 graph2dissimilarity <- function (G,Gp,
-                                      in.sample.ind,
-                                      d.dim,
-                                      w.vals.vec,
-                                graph.mode,
+                                 in.sample.ind,
+                                 d.dim,
+                                 w.vals.vec,
+                                 graph.mode,
                                  vert_diss_measure,
                                  T.param,
                                  num_v_to_embed_at_a_time  ,
@@ -67,9 +67,14 @@ graph2dissimilarity <- function (G,Gp,
     D.1 <-  diff.dist.fun(G,T.param)
     D.2 <-  diff.dist.fun(Gp,T.param)	
   } else if (vert_diss_measure == 'ECT'){
-    D.1 <-   ect(G)
-    D.2 <-   ect(Gp)
-   
+    if (any(!is.finite(G))) {
+      print(G(!is.finite(G)))
+    }
+    D.1 <-   ectime(G)
+    if (any(!is.finite(Gp)))
+      print(Gp(!is.finite(G)))
+    D.2 <-   ectime(Gp)
+    
   } else if (vert_diss_measure == 'ell1'){
     D.1 <-   as.matrix(dist(G,'manhattan'))
     D.2 <-   as.matrix(dist(Gp,'manhattan'))
@@ -93,30 +98,30 @@ graph2dissimilarity <- function (G,Gp,
     D.1 <- exp(-1*G/2)
     D.2 <- exp(-1*Gp/2)    
   } else if (vert_diss_measure == 'C_dice_weighted'){
-       
+    
     D.1 <- C_dice_weighted(G)
     D.2 <- C_dice_weighted(Gp)
-  }                                    ){
-    # In case dissimilarities blow up for diss. measure, put a limit on max 
-    # value for diss.
+  }                                   
+  # In case dissimilarities blow up for diss. measure, put a limit on max 
+  # value for diss.
+  
+  
+  
+  if (vert_diss_measure == "diffusion"){
     
-  
-
-if (vert_diss_measure == "diffusion"){
-
-  upper_diss_limit<-min(quantile(c(as.vector(D.1),as.vector(D.2)),
-				 0.99,na.rm=TRUE),1E3)
-  
-  D.1[D.1>upper_diss_limit] <- upper_diss_limit
-  D.2[D.2>upper_diss_limit] <- upper_diss_limit
-}
-    #Should we replace   infinite values of  D.1 and D.2  to large number
-    # or ignore them in embeddin?
-    #D.1.temp<-D.1
-    #D.2.temp<-D.2
-    D.1[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
-    D.2[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
-    D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
+    upper_diss_limit<-min(quantile(c(as.vector(D.1),as.vector(D.2)),
+                                   0.99,na.rm=TRUE),1E3)
+    
+    D.1[D.1>upper_diss_limit] <- upper_diss_limit
+    D.2[D.2>upper_diss_limit] <- upper_diss_limit
+  }
+  #Should we replace   infinite values of  D.1 and D.2  to large number
+  # or ignore them in embeddin?
+  #D.1.temp<-D.1
+  #D.2.temp<-D.2
+  D.1[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
+  D.2[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
+  D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
   
   
   in.sample.ind.half <- in.sample.ind[1:n]
@@ -126,8 +131,8 @@ if (vert_diss_measure == "diffusion"){
   diag(D.w) <- btw.cond.matched.diss
   
   D.M <-   omnibusM(D.1,D.2,D.w)
-    return(D.M)
-  }
+  return(D.M)
+}
 
 
 
@@ -139,64 +144,65 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
                                       vert_diss_measure  =  "default",
                                       T.param  =  NULL,
                                       num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
-                                      graph.is.weighted=FALSE   
+                                      graph.is.weighted=FALSE   )
+  {
+                                      
+
+
+n <-  nrow(G)
+graph.mode <-   ifelse(graph.is.directed,"directed","undirected")
+weighted.g <- graph.is.weighted
+if (!weighted.g)
+  weighted.g<-NULL
+print("T.param")
+print(T.param)
+
+
+
+D.M<-graph2dissimilarity (G,Gp,
+                          in.sample.ind,
+                          d.dim,
+                          w.vals.vec,
+                          graph.mode,
+                          vert_diss_measure,
+                          T.param,
+                          num_v_to_embed_at_a_time  ,
+                          weighted.g)
+
+
+#Given adjacency matrix, generate unweighted graph
+if (!graph.is.weighted)   print("Using adjacency for computing dissimilarities")
+else print("Using weighted for computing dissimilarities") 
+if (isSymmetric(G)) {print("G is symmetric")}
+else   {print("G is unsymmetric")}
+
+if (isSymmetric(Gp)) {print("Gp is symmetric")}
+else   {print("G is unsymmetric")}
+
+#num_v_to_embed_at_a_time   <-   min(floor(1.2*sum(in.sample.ind)),sum(!in.sample.ind))
+#num_v_to_embed_at_a_time   <-   sum(!in.sample.ind)
+print("num_v_to_embed_at_a_time")
+print(num_v_to_embed_at_a_time)
+Embed.List <-  Embed.Nodes(D.M,  in.sample.ind ,oos  =  TRUE ,
+                           d.start  =  d.dim,
+                           wt.equalize =  FALSE,
+                           separability.entries.w  =  FALSE,
+                           assume.matched.for.oos   =   FALSE,
+                           w.vals  =  w.vals.vec,
+                           oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time                             
+)	
+J <-  list()
+for (Y.embed in Embed.List){
+  
+  test.samp.size <-  nrow(Y.embed)/2
+  Dist  <-  as.matrix(dist(Y.embed))[1:test.samp.size,(1:test.samp.size)+test.samp.size]
+  
+  J <-  c(J,list(Dist))
+  
 }
-  
+return(J)
 
-  n <-  nrow(G)
-  graph.mode <-   ifelse(graph.is.directed,"directed","undirected")
-  weighted.g <- graph.is.weighted
-  if (!weighted.g)
-    weighted.g<-NULL
-  print("T.param")
-  print(T.param)
-    
-  
 
-    D.M<-graph2dissimilarity (G,Gp,
-                                 in.sample.ind,
-                                 d.dim,
-                                 w.vals.vec,
-                                 graph.mode,
-                                 vert_diss_measure,
-                                 T.param,
-                                 num_v_to_embed_at_a_time  ,
-                                 weighted.g)
-  
-  
-  #Given adjacency matrix, generate unweighted graph
-  if (!graph.is.weighted)   print("Using adjacency for computing dissimilarities")
-  else print("Using weighted for computing dissimilarities") 
-  if (isSymmetric(G)) {print("G is symmetric")}
-  else   {print("G is unsymmetric")}
-  
-  if (isSymmetric(Gp)) {print("Gp is symmetric")}
-  else   {print("G is unsymmetric")}
-
-  #num_v_to_embed_at_a_time   <-   min(floor(1.2*sum(in.sample.ind)),sum(!in.sample.ind))
-  #num_v_to_embed_at_a_time   <-   sum(!in.sample.ind)
-  print("num_v_to_embed_at_a_time")
-  print(num_v_to_embed_at_a_time)
-  Embed.List <-  Embed.Nodes(D.M,  in.sample.ind ,oos  =  TRUE ,
-                             d.start  =  d.dim,
-                             wt.equalize =  FALSE,
-                             separability.entries.w  =  FALSE,
-                             assume.matched.for.oos   =   FALSE,
-                             w.vals  =  w.vals.vec,
-                             oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time                             
-  					)	
-  J <-  list()
-  for (Y.embed in Embed.List){
-    
-    test.samp.size <-  nrow(Y.embed)/2
-    Dist  <-  as.matrix(dist(Y.embed))[1:test.samp.size,(1:test.samp.size)+test.samp.size]
-    
-    J <-  c(J,list(Dist))
-    
-  }
-  return(J)
-  
-  
 }
 
 
@@ -225,19 +231,19 @@ JOFC.graph.diff <-  function(G,Gp,
 
 
 JOFC.graph.with.opts <-  function(G,Gp,
-                  in.sample.ind,
-                  d.dim,
-                  w.vals.vec,
-                  graph.is.directed  =  FALSE,
-                  oos  =  TRUE,
-                  notconnect.wt  =  10,
-                  use.weighted.graph  =  TRUE,
-                  wt.matrix.1  =  NULL,
-                  wt.matrix.2  =  NULL,
-                  sep.graphs  =  TRUE, # if TRUE, treat two graphs separately to compute dissimilarities
-                  #and impute W (off-diagonalblock matrix)
-                  # if FALSE, join the graphs and compute dissimilarities from joint graph
-                  matched.cost  =  0.01
+                                  in.sample.ind,
+                                  d.dim,
+                                  w.vals.vec,
+                                  graph.is.directed  =  FALSE,
+                                  oos  =  TRUE,
+                                  notconnect.wt  =  10,
+                                  use.weighted.graph  =  TRUE,
+                                  wt.matrix.1  =  NULL,
+                                  wt.matrix.2  =  NULL,
+                                  sep.graphs  =  TRUE, # if TRUE, treat two graphs separately to compute dissimilarities
+                                  #and impute W (off-diagonalblock matrix)
+                                  # if FALSE, join the graphs and compute dissimilarities from joint graph
+                                  matched.cost  =  0.01
 ){
   #obsolete
   print("use other JOFC.graph functions")
@@ -445,16 +451,16 @@ Embed.Nodes  <-  function(D.omnibus,
       embed.dim   <-   embed.dim + 1
       
       X.embeds <-  try(JOFC.Insample.Embed(D.in,embed.dim,
-                                       w.vals,separability.entries.w,
-                                       init.conf  =  init.conf,
-                                       wt.equalize  =  wt.equalize))
+                                           w.vals,separability.entries.w,
+                                           init.conf  =  init.conf,
+                                           wt.equalize  =  wt.equalize))
       if (inherits(X.embeds,"try-error")) {
-            print('Unable to embed via smacof')
-        		X.embeds<-list(cmdscale(D.in, k=d.start))
-            embed.dim<-d.start
-		full.seed.match   <-    TRUE
-          }
-     
+        print('Unable to embed via smacof')
+        X.embeds<-list(cmdscale(D.in, k=d.start))
+        embed.dim<-d.start
+        full.seed.match   <-    TRUE
+      }
+      
       pw.dist.insample <- as.matrix(dist(X.embeds[[1]]))
       
       insample.match <-   pairmatch(pw.dist.insample[1:n,n+(1:n)])
@@ -463,16 +469,16 @@ Embed.Nodes  <-  function(D.omnibus,
       
       if (numTrueMatch == n){
         full.seed.match   <-    TRUE
-         print(paste("optimal dim is ", embed.dim))
+        print(paste("optimal dim is ", embed.dim))
       }
       if (all( True.match.last.memory== numTrueMatch)) {
         full.seed.match   <-    TRUE
         print(paste("optimal dim is ", embed.dim))
       }
-        True.match.last.memory[1] <-    True.match.last.memory[2]
-        True.match.last.memory[2] <-    True.match.last.memory[3]
-	  True.match.last.memory[3] <-   numTrueMatch
-        
+      True.match.last.memory[1] <-    True.match.last.memory[2]
+      True.match.last.memory[2] <-    True.match.last.memory[3]
+      True.match.last.memory[3] <-   numTrueMatch
+      
     }
     # Increment embed.dim by 1 to be on the safe side
     # embed.dim <-embed.dim+1
@@ -689,26 +695,55 @@ C_dice_weighted <- function(W){
     }
     
   }
-	return(D)
+  return(D)
 }
 
 
 ectime<-function(W){
-w<-matrix(1,nrow(W),1)
- t<- W%*%w
- t<- c(t)
-T<- diag(t)
-L<- T-W
-nL<-(diag(t^(-.5))) %*% L %*% (diag(t^(-.5)))
-nG<- pinv(nL)
-G<-(diag(t^(-.5)))%*% nG %*%(diag(t^(.5)))
-v=sum(t)
-ect<- matrix(0,nrow(W),ncol(W))
-for(i in 1:nrow(W)){
-	for(j in 1:ncol(W)){
-		ect[i,j] <- v* (G[i,i]/t[i]+G[j,j]/t[j]-G[i,j]/t[i]-G[j,i]/t[j])}
-}
-ect
+   n <-nrow(W)
+  w<-matrix(1,nrow(W),1)
+  t<- W%*%w
+  t<- c(t)
+   t<- t+ 1E-3
+  T.mat <- diag(t)
+  L<- T.mat-W
+   
+   if ((nrow(L)!=n)| (ncol(L)!=n))
+     print(dim(L))
+   
+  nL<-try((diag(t^(-.5))) %*% L %*% (diag(t^(-.5))))
+   if (inherits(nL,"try-error")){
+     
+     print("nL exception")
+     print(str(nL))
+     print(str(L))
+     print(str(t))
+     print(dim(L))
+     
+     print(dim(t))
+     stop()
+   }
+   
+   
+   if (any(!is.finite(nL))) {
+     print("nL invalid values")
+     print(str(nL))
+     print(str(L))
+     print(str(t))
+     print( nL[!is.finite(nL)])
+     print( W[!is.finite(W)])
+     print( t[!is.finite(t)])
+   }
+  nG<- ginv(nL)
+  G<-(diag(t^(-.5)))%*% nG %*%(diag(t^(.5)))
+  v=sum(t)
+  ect<- matrix(0,nrow(W),ncol(W))
+  for(i in 1:n) {
+    for(j in 1:n){
+      ect[i,j] <- v* (G[i,i]/t[i]+G[j,j]/t[j]-G[i,j]/t[i]-G[j,i]/t[j])
+      }
+  }
+  ect
 }
 
 
