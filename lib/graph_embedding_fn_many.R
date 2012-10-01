@@ -247,7 +247,7 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
   J <-  list()
   for (Y.embed in Embed.List){
     
-    test.samp.size <-  nrow(Y.embed)/2
+    
     Dist  <-  as.matrix(dist(Y.embed))[1:test.m.1,(1:test.m.2)+test.m.1]
     
     J <-  c(J,list(Dist))
@@ -690,7 +690,7 @@ Embed.Nodes.many <-function(D.Mats,
   
 }
 
-solveMarriage<- function(Dist){
+solveMarriage.many<- function(Dist){
   matches<-fullmatch(Dist)
   return(matches)
   

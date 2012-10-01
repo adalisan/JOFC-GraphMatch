@@ -39,9 +39,9 @@ perturbG <-  function(G,q){
 
 
 graph2dissimilarity <- function (G,Gp,
-                                 in.sample.ind,
-                                 d.dim,
-                                 w.vals.vec,
+                                      in.sample.ind,
+                                      d.dim,
+                                      w.vals.vec,
                                 graph.mode,
                                  vert_diss_measure,
                                  T.param,
@@ -56,7 +56,7 @@ graph2dissimilarity <- function (G,Gp,
   
   
   #Now that graphs are generated from adjacency or weight matrices,
-  # compute dissimilarities using shortest.paths  
+  # compute dissimilarities using shortest.paths	
   
   
   #compute dissimilarities in separate graphs, then impute dissimilarity between different condition
@@ -66,6 +66,10 @@ graph2dissimilarity <- function (G,Gp,
   } else if (vert_diss_measure == "diffusion"){
     D.1 <-  diff.dist.fun(G,T.param)
     D.2 <-  diff.dist.fun(Gp,T.param)	
+  } else if (vert_diss_measure == 'ECT'){
+    D.1 <-   ect(G)
+    D.2 <-   ect(Gp)
+   
   } else if (vert_diss_measure == 'ell1'){
     D.1 <-   as.matrix(dist(G,'manhattan'))
     D.2 <-   as.matrix(dist(Gp,'manhattan'))
@@ -89,23 +93,23 @@ graph2dissimilarity <- function (G,Gp,
     D.1 <- exp(-1*G/2)
     D.2 <- exp(-1*Gp/2)    
   } else if (vert_diss_measure == 'C_dice_weighted'){
-    
+       
     D.1 <- C_dice_weighted(G)
     D.2 <- C_dice_weighted(Gp)
   }                                    ){
     # In case dissimilarities blow up for diss. measure, put a limit on max 
     # value for diss.
     
-    
-    
-    if (vert_diss_measure == "diffusion"){
-      
-      upper_diss_limit<-min(quantile(c(as.vector(D.1),as.vector(D.2)),
-                                     0.99,na.rm=TRUE),1E3)
-      
-      D.1[D.1>upper_diss_limit] <- upper_diss_limit
-      D.2[D.2>upper_diss_limit] <- upper_diss_limit
-    }
+  
+
+if (vert_diss_measure == "diffusion"){
+
+  upper_diss_limit<-min(quantile(c(as.vector(D.1),as.vector(D.2)),
+				 0.99,na.rm=TRUE),1E3)
+  
+  D.1[D.1>upper_diss_limit] <- upper_diss_limit
+  D.2[D.2>upper_diss_limit] <- upper_diss_limit
+}
     #Should we replace   infinite values of  D.1 and D.2  to large number
     # or ignore them in embeddin?
     #D.1.temp<-D.1
@@ -113,15 +117,15 @@ graph2dissimilarity <- function (G,Gp,
     D.1[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
     D.2[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
     D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
-    
-    
-    in.sample.ind.half <- in.sample.ind[1:n]
-    btw.cond.matched.diss <- rep(0,n)
-    btw.cond.matched.diss[!in.sample.ind.half] <- NA
-    
-    diag(D.w) <- btw.cond.matched.diss
-    
-    D.M <-   omnibusM(D.1,D.2,D.w)
+  
+  
+  in.sample.ind.half <- in.sample.ind[1:n]
+  btw.cond.matched.diss <- rep(0,n)
+  btw.cond.matched.diss[!in.sample.ind.half] <- NA
+  
+  diag(D.w) <- btw.cond.matched.diss
+  
+  D.M <-   omnibusM(D.1,D.2,D.w)
     return(D.M)
   }
 
@@ -686,6 +690,25 @@ C_dice_weighted <- function(W){
     
   }
 	return(D)
+}
+
+
+ectime<-function(W){
+w<-matrix(1,nrow(W),1)
+ t<- W%*%w
+ t<- c(t)
+T<- diag(t)
+L<- T-W
+nL<-(diag(t^(-.5))) %*% L %*% (diag(t^(-.5)))
+nG<- pinv(nL)
+G<-(diag(t^(-.5)))%*% nG %*%(diag(t^(.5)))
+v=sum(t)
+ect<- matrix(0,nrow(W),ncol(W))
+for(i in 1:nrow(W)){
+	for(j in 1:ncol(W)){
+		ect[i,j] <- v* (G[i,i]/t[i]+G[j,j]/t[j]-G[i,j]/t[i]-G[j,i]/t[j])}
+}
+ect
 }
 
 
