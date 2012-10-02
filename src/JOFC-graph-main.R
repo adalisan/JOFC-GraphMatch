@@ -4,17 +4,18 @@ source("./src/JOFC-graph-experiment-sim-fn.R")
 ####################
 # A smaller graph
 
-n<-100
-nmc <- 100
+n<-20
+nmc <- 1
 
 #pert<- seq(0,0.5,0.1)
-pert<- seq(0,0.4,0.1)
+#pert<- seq(0,0.4,0.1)
+pert<- 0
 n_vals<- c(seq(3,20,2),seq(20,95,5))
 
 corr.results.list<- list()
 
 for (mc in 1:nmc){
-  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=1,
+  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=2,
                                      diss_measure="default",it.per.G=1,
                                      num_v_to_embed_at_a_time=1)
   corr.results.list<- c(corr.results.list,list(corr.results.mc))
@@ -81,17 +82,17 @@ corr.matches.wt.exp.par$agg
 #test
 
 
-n_vals_worm=c(5, 10,30)
+n_vals_worm=c(90,150,200)
 
-corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
+corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=5,
                                weighted.graph=TRUE,diss_measure="C_dice_weighted")
 avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
 
 
 
-corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
+corr.matches.wt.expm<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
                                weighted.graph=TRUE,diss_measure="exp_minus")
-avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
+avg.corr.worm.wt.expm<- corr.matches.wt.expm/(279-n_vals_worm)
 
 
 corr.matches.wt.diff<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
@@ -125,17 +126,9 @@ corr.matches.wt.exp<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
 avg.corr.worm.wt.exp <- corr.matches.wt.exp/(279-n_vals_worm)
 
 
-
-
-
-
 corr.matches.wt.diff<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
 					weighted.graph=FALSE,diss_measure="diffusion")
 avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
-
-
-
-
 
 
 
