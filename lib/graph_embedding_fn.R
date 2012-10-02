@@ -124,13 +124,16 @@ graph2dissimilarity <- function (G,Gp,
   D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
   
   
+  
   in.sample.ind.half <- in.sample.ind[1:n]
   btw.cond.matched.diss <- rep(0,n)
   btw.cond.matched.diss[!in.sample.ind.half] <- NA
+  in.sample.indices.half<-which(in.sample.ind.half)
   
   diag(D.w) <- btw.cond.matched.diss
+  D.w[in.sample.indices.half,n+in.sample.indices.half]<-NA
   
-  D.M <-   omnibusM(D.1,D.2,D.w)
+  D.M <-   omnibusM.inoos(D.1,D.2,D.w)
   return(D.M)
 }
 
@@ -420,8 +423,225 @@ tMatch.oos<-function(M,oos.log){
 
 
 
-
 Embed.Nodes  <-  function(D.omnibus,
+                                   in.sample.ind,
+                                   oos, 
+                                   d.start,
+                                   wt.equalize  =  FALSE,
+                                   separability.entries.w  =  FALSE,
+                                   assume.matched.for.oos   =   FALSE ,
+                                   w.vals  =  0.99,
+                                   oos.embed.n.at.a.time   =   sum(!in.sample.ind)/2,
+                                   mds.init.method="gower"){
+  
+  sink("Embed.debug.txt")
+  
+  Y.embeds <-  list()
+  oos.use.imputed <-   FALSE
+  w.max.index <-  length(w.vals)
+  # number of insample pairs
+  n <-  sum(in.sample.ind)/2
+  # number of oos pairs
+  all.m <-  sum(!in.sample.ind)/2
+  
+  #in.sample.ind <-  which(in.sample.ind)
+  
+  D.in  <-   D.omnibus[in.sample.ind,in.sample.ind]
+  
+  # embedding order for oos vertices
+  all.oos.indices <-   which(!in.sample.ind)
+  v.embed.order    <-   sample(all.oos.indices[1:all.m],all.m,replace  =  FALSE)
+  v.embed.order.2  <-   sample(all.oos.indices[all.m+(1:all.m)],all.m,replace  =  FALSE)
+  embed.order    <-   c(v.embed.order,v.embed.order.2)
+  
+  #number  of groups that are  embedded at the same time
+  num.embed.groups   <-   ceiling(all.m/oos.embed.n.at.a.time)
+  insample.indices <-   which(in.sample.ind)
+  
+  # Embed in-sample using different weight matrices (differentw values)
+  
+  
+  
+  
+  init.conf  <-  NULL
+  
+  
+  # Find the minimum embedding dimension that matches all the seeds correctly
+  full.seed.match  <-   FALSE
+  embed.dim  <-  d.start
+  prevTrueMatch = -1
+  True.match.last.memory <- rep(-1,3)
+  
+  while  (!full.seed.match) {
+    X.embeds.f <- list()
+    embed.dim   <-   embed.dim + 3
+    
+    X.embeds.f <-  JOFC.Insample.Embed(D.in,embed.dim,
+                                       w.vals,separability.entries.w,
+                                       init.conf  =  init.conf,
+                                       wt.equalize  =  wt.equalize)
+    # if (inherits(X.embeds,"try-error")) {
+    #   print('Unable to embed via smacof')
+    #   X.embeds<-list(cmdscale(D.in, k=d.start))
+    #   embed.dim<-d.start
+    #   full.seed.match   <-    TRUE
+    # }
+    
+    pw.dist.insample <- as.matrix(dist(X.embeds.f[[1]]))
+    
+    insample.match <-   pairmatch(pw.dist.insample[1:n,n+(1:n)])
+    
+    numTrueMatch <-  present(insample.match)
+    
+    if (numTrueMatch == n){
+      full.seed.match   <-    TRUE
+      print(paste("optimal dim is ", embed.dim))
+    }
+    if (all( True.match.last.memory== numTrueMatch)) {
+      full.seed.match   <-    TRUE
+      print(paste("optimal dim is ", embed.dim))
+    }
+    True.match.last.memory[1] <-    True.match.last.memory[2]
+    True.match.last.memory[2] <-    True.match.last.memory[3]
+    True.match.last.memory[3] <-   numTrueMatch
+    
+  } 
+  full.seed.match<-FALSE
+  prevTrueMatch = -1
+  True.match.last.memory <- rep(-1,3)
+  while  (!full.seed.match) {
+    embed.dim   <-   embed.dim + 3
+    
+    X.embeds <-  try(JOFC.Insample.Embed(D.in,ndimens=embed.dim,
+                                         w.vals,separability.entries.w,
+                                         init.conf  =  init.conf,
+                                         wt.equalize  =  wt.equalize))
+    if (inherits(X.embeds,"try-error")) {
+      print('Unable to embed via smacof')
+      X.embeds<-list(cmdscale(D.in, k=d.start))
+      embed.dim<-d.start
+      full.seed.match   <-    TRUE
+    }
+    print("Insample embedding complete")
+    #    for (l in 1:w.max.index){
+    
+    l <- 1
+    print(paste("OOS embedding for JOFC for w  = ",w.vals[l]))
+    
+    
+    w.val.l  <-   w.vals[l]
+    X  <-   X.embeds[[l]]
+    dim.X <- dim(X)
+    Y.0  <-   matrix(-1,length(in.sample.ind),dim.X[2])
+    print(dim(X))
+    print(dim(Y.0))
+    print(sum(in.sample.ind))
+    Y.0[in.sample.ind,] <- X
+    
+      test.m  <-   oos.embed.n.at.a.time 
+      omnibus.oos.D.0  <-   rbind(
+        cbind(D.in,D.omnibus[insample.indices,oos.sample.indices]),
+        cbind(D.omnibus[oos.sample.indices,insample.indices],
+              D.omnibus[oos.sample.indices,oos.sample.indices])
+      )
+      
+      if (sink.number()>0) sink()
+      #sink("Embedding.debug.txt")
+      
+      
+      #Compute Weight matrix corresponding in-sample  entries
+      # Since we are going to oos-embedding, set the weights  of in-sample embedding of stress
+      # We are using previous in-sample embeddings, anyway
+      oos.Weight.mat.in <-  matrix(0,2*n,2*n)
+      
+      
+      # If assume.matched.for.oos is true, we assume OOS dissimilarities are matched(in reality,
+      # they are matched for the matched pairs, but unmatched for the unmatched pairs)
+      # If assume.matched.for.oos is true, we ignore the dissimilarities between matched/unmatched 
+      # pairs
+      
+      oos.Weight.mat.oos <-   matrix(0,2*test.m,2*test.m)
+      
+      
+      
+      # if (oos.use.imputed is true) we treat the dissimiilarities between  in-sample and out-of-sample measurements
+      # from different conditions like fidelity terms
+      # otherwise they are ignored
+      if (oos.use.imputed){
+        oos.Weight.mat.w  <-   matrix(1-w.val.l,2*n,2*test.m)
+      } else{
+        oos.Weight.mat.w  <-   rbind(cbind(matrix(1-w.val.l,n,test.m), matrix(0,n,test.m) ),
+                                     cbind(matrix(0,n,test.m),matrix(1-w.val.l,n,test.m))
+        )
+      }
+      
+      
+      oos.Weight.mat <-  omnibusM(oos.Weight.mat.in,oos.Weight.mat.oos,oos.Weight.mat.w)
+      
+      
+      
+      
+      oos.Weight.mat[is.na(omnibus.oos.D.0)] <-  0
+      omnibus.oos.D.0[is.na(omnibus.oos.D.0)] <-  1
+      
+      #print("JOFC null omnibus OOS embedding \n")
+      
+      
+      #The argument W foor oosIM function
+      #is formed of  weights for in.sample indices in the upper left,
+      #weight for oos in the upper right 
+      # ALWAYS independent of  isWithin
+      Y.0.embed <-  oosIM(D   =   omnibus.oos.D.0,
+                          X   =   X,
+                          init       =   mds.init.method,
+                          verbose    =   FALSE,
+                          itmax      =   1000,
+                          eps        =   1e-8,
+                          W          =   oos.Weight.mat,
+                          isWithin   =   NULL,
+                          bwOos      =   FALSE)
+      #print("oos.sample.indices")
+      #print(oos.sample.indices)
+      Y.0[oos.sample.indices,] <-  Y.0.embed
+      #sink()
+    }
+    
+    pw.dist.insample <- as.matrix(dist(Y.0))
+    num.pairs <- n+all.m
+    insample.match <-   pairmatch(pw.dist.insample[1:num.pairs,num.pairs+(1:num.pairs)])
+    
+    numTrueMatch <-  tMatch.insample(insample.match,in.sample.ind)
+    
+    if (numTrueMatch/num.pairs > 0.95){
+      full.seed.match   <-    TRUE
+      print(paste("optimal dim is ", embed.dim))
+    }
+    if (all( True.match.last.memory== numTrueMatch)) {
+      full.seed.match   <-    TRUE
+      print(paste("optimal dim is ", embed.dim))
+    }
+    True.match.last.memory[1] <-    True.match.last.memory[2]
+    True.match.last.memory[2] <-    True.match.last.memory[3]
+    True.match.last.memory[3] <-   numTrueMatch
+    
+    
+    Y.oos <- Y.0[all.oos.indices,]
+    Y.embeds <-  c(Y.embeds,list(Y.oos))
+    print("OOS embedding \n")
+    
+  } #  end while  (!full.seed.match)
+  
+  #  }
+  #sink()
+  
+  print("OOS embedding complete")
+  sink()
+  return (list(Y.embeds=Y.embeds,matches =insample.match))
+  
+}
+
+
+Embed.Nodes.one.atat  <-  function(D.omnibus,
                           in.sample.ind,
                           oos, 
                           d.start,

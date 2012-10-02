@@ -1242,6 +1242,14 @@ omnibusM <- function(D1, D2, W)
 }
 
 
+omnibusM.inoos <- function(D1, D2, W)
+{
+  D1 <- as.matrix(D1)
+  D2 <- as.matrix(D2)
+  W <- as.matrix(W)
+  rbind(cbind(D1, W), cbind(W, D2))
+}
+
 plot.MC.evalues.with.CI<-function(evalues.mc,plot.title,plot.col,conf.int=TRUE,add=FALSE){
 	
 	
@@ -1598,14 +1606,6 @@ binom.out <-function(cont.table.list){
 	return (binomial.v)
 }
 
-
-omnibusM.inoos <- function(D1, D2, W)
-{
-	D1 <- as.matrix(D1)
-	D2 <- as.matrix(D2)
-	W <- as.matrix(W)
-	rbind(cbind(D1, W), cbind(W, D2))
-}
 The.mode <- function(x, show_all_modes = F) 
 { 
 	x_freq <- table(x) 
