@@ -4,13 +4,13 @@ source("./src/JOFC-graph-experiment-sim-fn.R")
 ####################
 # A smaller graph
 
-n<-20
-nmc <- 1
+n<-100
+nmc <- 10
 
 #pert<- seq(0,0.5,0.1)
 #pert<- seq(0,0.4,0.1)
 pert<- 0
-n_vals<- c(seq(3,20,2),seq(20,95,5))
+n_vals<- c(seq(10,20,2),seq(20,95,5))
 
 corr.results.list<- list()
 
@@ -62,11 +62,6 @@ corr.results.avg <- corr.results.avg/length( corr.results.list)
 
 
 
-n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
-
-corr.matches<-worm_exp(num_iter=2,n_vals=n_vals_worm,embed.dim=2,
-				weighted.graph=FALSE)
-avg.corr.worm <- corr.matches/(279-n_vals_worm)
 
 
 
@@ -104,7 +99,7 @@ corr.matches.wt.diff<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
 avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
 
 corr.matches.wt.ect<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
-                               weighted.graph=TRUE,diss_measure="ECT")
+                               weighted.graph=FALSE,diss_measure="ECT")
 avg.corr.worm.wt.ect <- corr.matches.wt.ect/(279-n_vals_worm)
 
 
@@ -126,9 +121,32 @@ corr.matches.wt.exp<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
 avg.corr.worm.wt.exp <- corr.matches.wt.exp/(279-n_vals_worm)
 
 
-corr.matches.wt.diff<-worm_exp(num_iter=5,n_vals=n_vals_worm,embed.dim=2,
+corr.matches.wt.diff<-worm_exp(num_iter=15,n_vals=n_vals_worm,embed.dim=2,
 					weighted.graph=FALSE,diss_measure="diffusion")
 avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
+
+
+
+n_vals_worm=c(5, 8:20,seq(21,49,3),seq(50,200,10))
+
+
+corr.matches.wt.diff<-worm_exp(num_iter=15,n_vals=n_vals_worm,embed.dim=2,
+                               weighted.graph=TRUE,diss_measure="diffusion")
+avg.corr.worm.wt.diff <- corr.matches.wt.diff/(279-n_vals_worm)
+
+
+
+corr.matches.wt.ect<-worm_exp(num_iter=15,n_vals=n_vals_worm,embed.dim=2,
+                              weighted.graph=TRUE,diss_measure="ECT")
+avg.corr.worm.wt.ect <- corr.matches.wt.ect/(279-n_vals_worm)
+
+
+
+corr.matches<-worm_exp(num_iter=15,n_vals=n_vals_worm,embed.dim=2,
+                       weighted.graph=FALSE)
+avg.corr.worm <- corr.matches/(279-n_vals_worm)
+
+
 
 
 
