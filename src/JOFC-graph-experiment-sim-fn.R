@@ -1,6 +1,6 @@
 
 run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="default",
-                              num_v_to_embed_at_a_time=NULL, graph.is.weighted=FALSE){
+                              graph.is.weighted=FALSE){
   
   
   matched.cost<-0.01
@@ -16,15 +16,11 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       insample_logic_vec <- 1:N %in% sample(1:N,n_v,replace=FALSE)
       insample_logic_vec <- c(insample_logic_vec,insample_logic_vec)
       
-      if (is.null(num_v_to_embed_at_a_time))
-        num_v_to_embed_at_a_time = min(floor(0.6*sum(insample_logic_vec)),sum(!insample_logic_vec)/2)
-      else {
-        num_v_to_embed_at_a_time = 1
-      }
+      num_v_to_embed_at_a_time = NULL
       jofc.result<- 
 	#try(
 	JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 
-                                               d.dim=embed.dim, w.vals.vec=0.99,graph.is.directed=FALSE, 
+                                               d.dim=embed.dim, w.vals.vec=0.5,graph.is.directed=FALSE, 
                                                vert_diss_measure=diss_measure,  T.param  =  2,
                                                num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time,
                                                graph.is.weighted=graph.is.weighted)
@@ -37,7 +33,15 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       
       jofc.res.1<-jofc.result[[1]]
       
-      M.result.1<-try(solveMarriage(jofc.res.1))
+      #M.result.1<-try(solveMarriage(jofc.res.1))
+      test.m <- sum(!insample_logic_vec)/2
+     
+      
+      rownames(jofc.res.1) <- 1:test.m
+      colnames(jofc.res.1) <- 1:test.m
+      M.result.1<- solve_LSAP(jofc.res.1)
+      NumofTruePairing.1 <- sum(as.matrix(M.result.1)==1:test.m)
+      print(paste(NumofTruePairing.1," out of ", test.m,sep="",collapse=""))
       
       end.time <- proc.time()
       
@@ -48,7 +52,7 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
         print('Skipping iteration')
         next}
       
-      NumofTruePairing.1<-present(M.result.1)
+      #NumofTruePairing.1<-present(M.result.1)
       corr.matches[n_v_i,it] = NumofTruePairing.1
     }
   }
@@ -64,6 +68,7 @@ bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure,it.per.G=1,
   library(igraph)
   library(MASS)
   library(MCMCpack)
+  library(clue)
   source("./lib/graph_embedding_fn.R")
   source("./lib/simulation_math_util_fn.R")
   source("./lib/smacofM.R")
@@ -81,8 +86,8 @@ bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure,it.per.G=1,
     Y.emb<-NULL
     Gp<-bitflip(G ,pert[ipert],pert[ipert])
     corr.matches<-run.experiment.JOFC(G,Gp,n_vals,num_iter=it.per.G,
-                                      embed.dim=embed.dim, diss_measure=diss_measure,
-                                      num_v_to_embed_at_a_time = num_v_to_embed_at_a_time
+                                      embed.dim=embed.dim, diss_measure=diss_measure
+                                     
     )
     corr.match.array.mc[,ipert] <- corr.matches
   }
@@ -261,7 +266,7 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
   
   corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
                                     embed.dim,diss_measure=diss_measure,
-						num_v_to_embed_at_a_time=1,
+						                       
                                     graph.is.weighted=weighted.graph
 						)
   

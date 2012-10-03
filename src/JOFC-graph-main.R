@@ -4,14 +4,18 @@ source("./src/JOFC-graph-experiment-sim-fn.R")
 ####################
 # A smaller graph
 
+while (sink.number()>0) {
+  sink()
+}
+
 n<-100
-nmc <- 10
+nmc <- 1
 
 #pert<- seq(0,0.5,0.1)
 #pert<- seq(0,0.4,0.1)
-pert<- 0
+pert<- 0.1
 n_vals<- c(seq(10,20,2),seq(20,95,5))
-
+n_vals <-c(20,50)
 corr.results.list<- list()
 
 for (mc in 1:nmc){
@@ -79,8 +83,11 @@ corr.matches.wt.exp.par$agg
 
 n_vals_worm=c(150)
 
-corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=50,
-                               weighted.graph=TRUE,diss_measure="C_dice_weighted")
+sp<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=100,
+                               weighted.graph=TRUE,diss_measure="default")
+
+corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=10,
+                               weighted.graph=FALSE,diss_measure="C_dice_weighted")
 avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
 
 
