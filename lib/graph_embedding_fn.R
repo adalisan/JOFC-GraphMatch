@@ -196,14 +196,28 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
   #num_v_to_embed_at_a_time   <-   sum(!in.sample.ind)
  # print("num_v_to_embed_at_a_time")
  # print(num_v_to_embed_at_a_time)
-  Embed.List <-  Embed.Nodes(D.M,  in.sample.ind ,oos  =  TRUE ,
-                             d.start  =  d.dim,
-                             wt.equalize =  FALSE,
-                             separability.entries.w  =  TRUE,
-                             assume.matched.for.oos   =   FALSE,
-                             w.vals  =  w.vals.vec,
-                             oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time                             
-  )	
+#   Embed.List <-  Embed.Nodes(D.M,  in.sample.ind ,oos  =  TRUE ,
+#                              d.start  =  d.dim,
+#                              wt.equalize =  FALSE,
+#                              separability.entries.w  =  FALSE,
+#                              assume.matched.for.oos   =   FALSE,
+#                              w.vals  =  w.vals.vec,
+#                              oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time                             
+#   )	
+#   
+  
+  Embed.List <- Embed.Nodes.one.atat (D.M,
+                                     in.sample.ind,
+                                     oos=TRUE, 
+                                     d.start=d.dim,
+                                     wt.equalize  =  FALSE,
+                                     separability.entries.w  =  FALSE,
+                                     assume.matched.for.oos   =   FALSE ,
+                                     w.vals  =  0.8,
+                                     oos.embed.n.at.a.time   =  1,
+                                     mds.init.method="gower")
+  
+  
   #print(str(Embed.List))
   J <-  list()
   for (Y.embed in Embed.List$Y.embeds){
@@ -781,7 +795,7 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
                                    mds.init.method="gower"){
   
   #sink("Embed.debug.txt")
-  
+  matching <- 0
   Y.embeds <-  list()
   oos.use.imputed <-   FALSE
   w.max.index <-  length(w.vals)
@@ -820,7 +834,7 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
   
   while  (!full.seed.match) {
     X.embeds.f <- list()
-    embed.dim   <-   embed.dim + 3
+    embed.dim   <-   embed.dim + 5
     
     X.embeds.f <-  JOFC.Insample.Embed(D.in,embed.dim,
                                        w.vals,sep.err.w=TRUE,
@@ -835,11 +849,22 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
     
     pw.dist.insample <- as.matrix(dist(X.embeds.f[[1]]))
     
-    insample.match <-   pairmatch(pw.dist.insample[1:n,n+(1:n)])
+    cost.mat <- pw.dist.insample[1:n,n+(1:n)]
+    rownames(cost.mat) <- 1:n
+    colnames(cost.mat) <- 1:n
+    #insample.match <-   pairmatch()
     
-    numTrueMatch <-  present(insample.match)
+    #numTrueMatch <-  tMatch.insample(insample.match,in.sample.ind)
+    #temp.ind<- c(rep(T,n),rep(F,all.m))
+    #temp.ind<- c(temp.ind, rep(T,n),rep(F,all.m))
+    #numTrueMatch <-  tMatch.insample(insample.match,temp.ind)
     
-    if (numTrueMatch == n){
+    matching<- solve_LSAP(cost.mat)
+    all.matches <- as.matrix(matching) == 1:n
+    numTrueMatch <- sum(all.matches[1:n])
+    print(paste(numTrueMatch," true matches  out of ", n  ," pairings"))
+    
+    if (numTrueMatch /n>0.95){
       full.seed.match   <-    TRUE
       print(paste("optimal dim is ", embed.dim))
     }
@@ -855,8 +880,11 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
   full.seed.match<-FALSE
   prevTrueMatch = -1
   True.match.last.memory <- rep(-1,3)
+  embed.dim <- embed.dim -5
+  
+  
   while  (!full.seed.match) {
-    embed.dim   <-   embed.dim + 3
+    embed.dim   <-   embed.dim + 5
     
     X.embeds <-  try(JOFC.Insample.Embed(D.in,ndimens=embed.dim,
                                          w.vals,sep.err.w=TRUE,
@@ -864,8 +892,9 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
                                          wt.equalize  =  wt.equalize))
     if (inherits(X.embeds,"try-error")) {
       print('Unable to embed via smacof')
-      X.embeds<-list(cmdscale(D.in, k=d.start))
-      embed.dim<-d.start
+      embed.dim<-embed.dim-5
+      X.embeds<-list(cmdscale(D.in, k=embed.dim))
+      
       full.seed.match   <-    TRUE
     }
    # print("Insample embedding complete")
@@ -975,11 +1004,29 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
     
     pw.dist.insample <- as.matrix(dist(Y.0))
     num.pairs <- n+all.m
-    insample.match <-   pairmatch(pw.dist.insample[1:num.pairs,num.pairs+(1:num.pairs)])
     
-    numTrueMatch <-  tMatch.insample(insample.match,in.sample.ind)
     
-    if (numTrueMatch/num.pairs > 0.95){
+    cost.mat <- pw.dist.insample[1:num.pairs,num.pairs+(1:num.pairs)]
+    rownames(cost.mat) <- 1:num.pairs
+    colnames(cost.mat) <- 1:num.pairs
+    #insample.match <-   pairmatch()
+    
+    #numTrueMatch <-  tMatch.insample(insample.match,in.sample.ind)
+    #temp.ind<- c(rep(T,n),rep(F,all.m))
+    #temp.ind<- c(temp.ind, rep(T,n),rep(F,all.m))
+    #numTrueMatch <-  tMatch.insample(insample.match,temp.ind)
+    
+    matching<- solve_LSAP(cost.mat)
+    all.matches <- as.matrix(matching) == 1:num.pairs
+    numTrueMatch <- sum(all.matches[in.sample.ind[1:num.pairs]])
+    print(paste(numTrueMatch," true matches  out of ", n  ," pairings"))
+    
+    
+    #insample.match <-   pairmatch(pw.dist.insample[1:num.pairs,num.pairs+(1:num.pairs)])
+    
+    #numTrueMatch <-  tMatch.insample(insample.match,in.sample.ind)
+    
+    if (numTrueMatch/n > 0.95){
       full.seed.match   <-    TRUE
       print(paste("optimal dim is ", embed.dim))
     }
@@ -1003,7 +1050,7 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
   
   print("OOS embedding complete")
   #sink()
-  return (list(Y.embeds=Y.embeds,matches =insample.match))
+  return (list(Y.embeds=Y.embeds,matches =matching))
   
 }
 

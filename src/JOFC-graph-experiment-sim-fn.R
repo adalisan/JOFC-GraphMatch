@@ -10,7 +10,12 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
   
   for (n_v_i in 1:length(n_vals)){
     n_v = n_vals[n_v_i]
+    print("n is ")
+    print(n_v)
     for (it in 1:num_iter){
+      print("iteration")
+      print(it)
+      
       init.time <- proc.time()
       #insample_logic_vec <- 1:N %in% 1:n_v
       insample_logic_vec <- 1:N %in% sample(1:N,n_v,replace=FALSE)

@@ -13,7 +13,7 @@ nmc <- 1
 
 #pert<- seq(0,0.5,0.1)
 #pert<- seq(0,0.4,0.1)
-pert<- 0.1
+pert<- 0.3
 n_vals<- c(seq(10,20,2),seq(20,95,5))
 n_vals <-c(20,50)
 corr.results.list<- list()
@@ -161,8 +161,9 @@ corr.matches.e<-enron_exp(num_iter=5,n_vals=n_vals_enron,embed.dim=2)
 
 
 n_vals_worm=c(seq(20,100,20),seq(125,200,25))
+n_vals_worm=c(20,50,100,150,200)
 
-corr.matches.wt.dice<-worm_exp(num_iter=20,n_vals=n_vals_worm,embed.dim=5,
+corr.matches.wt.dice<-worm_exp(num_iter=10,n_vals=n_vals_worm,embed.dim=10,
                                weighted.graph=TRUE,diss_measure="C_dice_weighted")
 avg.corr.worm.wt.dice <- corr.matches.wt.dice/(253-n_vals_worm)
 
