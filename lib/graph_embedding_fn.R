@@ -121,8 +121,9 @@ graph2dissimilarity <- function (G,Gp,
   #D.2.temp<-D.2
   D.1[is.infinite(D.1)] <-  2*max(D.1[is.finite(D.1)])
   D.2[is.infinite(D.2)] <-  2*max(D.2[is.finite(D.2)])
-  D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
-  
+  #D.w <-   (D.1+D.2)/2  #mapply(min,D.1,D.2)
+  D.w <- D.2
+  D.w.p <- D.1
   
   
   in.sample.ind.half <- in.sample.ind[1:n]
@@ -131,9 +132,13 @@ graph2dissimilarity <- function (G,Gp,
   in.sample.indices.half<-which(in.sample.ind.half)
   
   diag(D.w) <- btw.cond.matched.diss
-  D.w[!in.sample.indices.half,]<-NA
+  diag(D.w.p) <- btw.cond.matched.diss
+  D.w[!in.sample.ind.half,]<-NA
+  D.w.p[!in.sample.ind.half,]<-NA
   
-  D.M <-   omnibusM.inoos(D.1,D.2,D.w)
+  D.M <-   rbind(cbind(D.1,D.w),
+                 cbind(D.w.p,D.2)
+  )
   return(D.M)
 }
 
@@ -157,8 +162,8 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
   weighted.g <- graph.is.weighted
   if (!weighted.g)
     weighted.g<-NULL
-  print("T.param")
-  print(T.param)
+ # print("T.param")
+ # print(T.param)
   
   
   
@@ -184,8 +189,8 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
   
   #num_v_to_embed_at_a_time   <-   min(floor(1.2*sum(in.sample.ind)),sum(!in.sample.ind))
   #num_v_to_embed_at_a_time   <-   sum(!in.sample.ind)
-  print("num_v_to_embed_at_a_time")
-  print(num_v_to_embed_at_a_time)
+ # print("num_v_to_embed_at_a_time")
+ # print(num_v_to_embed_at_a_time)
   Embed.List <-  Embed.Nodes(D.M,  in.sample.ind ,oos  =  TRUE ,
                              d.start  =  d.dim,
                              wt.equalize =  FALSE,
@@ -194,7 +199,7 @@ JOFC.graph.custom.dist  <-   function(G,Gp,
                              w.vals  =  w.vals.vec,
                              oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time                             
   )	
-  print(str(Embed.List))
+  #print(str(Embed.List))
   J <-  list()
   for (Y.embed in Embed.List$Y.embeds){
     
@@ -668,9 +673,9 @@ Embed.at.dim<- function ( D.in,D.omnibus,
   X  <-   X.embeds[[l]]
   dim.X <- dim(X)
   Y.0  <-   matrix(-1,length(in.sample.ind),dim.X[2])
-  print(dim(X))
-  print(dim(Y.0))
-  print(sum(in.sample.ind))
+  #print(dim(X))
+  #print(dim(Y.0))
+  #print(sum(in.sample.ind))
   Y.0[in.sample.ind,] <- X
   
   test.m  <-   oos.embed.n.at.a.time 
@@ -758,10 +763,6 @@ Embed.at.dim<- function ( D.in,D.omnibus,
   
   return(Y.0)
 }
-
-
-
-
 
 Embed.Nodes.one.atat  <-  function(D.omnibus,
                                    in.sample.ind,
@@ -862,7 +863,7 @@ Embed.Nodes.one.atat  <-  function(D.omnibus,
       embed.dim<-d.start
       full.seed.match   <-    TRUE
     }
-    print("Insample embedding complete")
+   # print("Insample embedding complete")
     #    for (l in 1:w.max.index){
     
     l <- 1

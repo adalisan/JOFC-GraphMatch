@@ -77,9 +77,9 @@ corr.matches.wt.exp.par$agg
 #test
 
 
-n_vals_worm=c(90,150,200)
+n_vals_worm=c(150)
 
-corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=5,
+corr.matches.wt.dice<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=50,
                                weighted.graph=TRUE,diss_measure="C_dice_weighted")
 avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
 
@@ -103,13 +103,6 @@ corr.matches.wt.ect<-worm_exp(num_iter=1,n_vals=n_vals_worm,embed.dim=2,
 avg.corr.worm.wt.ect <- corr.matches.wt.ect/(279-n_vals_worm)
 
 
-
-
-n_vals_worm=c(5, seq(8,20,2),seq(21,49,3),seq(50,200,10))
-
-corr.matches.wt.dice<-worm_exp(num_iter=50,n_vals=n_vals_worm,embed.dim=2,
-					weighted.graph=TRUE,diss_measure="C_dice_weighted")
-avg.corr.worm.wt.dice <- corr.matches.wt.dice/(279-n_vals_worm)
 
 
 
@@ -152,6 +145,20 @@ avg.corr.worm <- corr.matches/(279-n_vals_worm)
 
 n_vals_enron=c(5, 8:20,seq(21,49,3),seq(50,160,10))
 corr.matches.e<-enron_exp(num_iter=5,n_vals=n_vals_enron,embed.dim=2)
+
+
+
+
+
+
+
+
+n_vals_worm=c(seq(20,100,20),seq(125,200,25))
+
+corr.matches.wt.dice<-worm_exp(num_iter=20,n_vals=n_vals_worm,embed.dim=5,
+                               weighted.graph=TRUE,diss_measure="C_dice_weighted")
+avg.corr.worm.wt.dice <- corr.matches.wt.dice/(253-n_vals_worm)
+
 
 
 
