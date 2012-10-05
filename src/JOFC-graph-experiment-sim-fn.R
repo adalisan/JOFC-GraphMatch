@@ -21,7 +21,7 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       insample_logic_vec <- 1:N %in% sample(1:N,n_v,replace=FALSE)
       insample_logic_vec <- c(insample_logic_vec,insample_logic_vec)
       
-      num_v_to_embed_at_a_time = NULL
+      num_v_to_embed_at_a_time = 1
       jofc.result<- 
 	#try(
 	JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 

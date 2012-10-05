@@ -9,17 +9,17 @@ while (sink.number()>0) {
 }
 
 n<-100
-nmc <- 1
+nmc <- 20
 
-#pert<- seq(0,0.5,0.1)
+pert<- seq(0,0.5,0.1)
 #pert<- seq(0,0.4,0.1)
-pert<- 0.3
-n_vals<- c(seq(10,20,2),seq(20,95,5))
-n_vals <-c(20,50)
+#pert<- 0.3
+n_vals<- c(seq(10,20,5),seq(20,90,10))
+#n_vals <-c(20,50)
 corr.results.list<- list()
 
 for (mc in 1:nmc){
-  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=2,
+  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=12,
                                      diss_measure="default",it.per.G=1,
                                      num_v_to_embed_at_a_time=1)
   corr.results.list<- c(corr.results.list,list(corr.results.mc))
@@ -30,8 +30,12 @@ for (mc in 1:nmc){
 
 
 corr.results.avg <- array(0, dim( corr.results.list[[1]]))
+corr.results.agg<-  array(0, c(dim( corr.results.list[[1]]),20))
+i<-1
 for (corr.results in corr.results.list){
   corr.results.avg <- corr.results.avg+corr.results
+  corr.results.agg[,,i] <- corr.results
+  i <- i+1
 }  
 corr.results.avg <- corr.results.avg/length( corr.results.list)
 
@@ -39,18 +43,18 @@ corr.results.avg <- corr.results.avg/length( corr.results.list)
 
 
 n<-300
-nmc <- 100
+nmc <- 50
 
 pert<- seq(0,0.5,0.1)
-n_vals<- c(seq(3,20,2),seq(20,95,5))
+n_vals<- c(seq(15,20,5),seq(20,90,10),seq(100,250,25))
 
-corr.results.list<- list()
+corr.results.list.300<- list()
 
 for (mc in 1:nmc){
-  corr.results.mc <-  bitflip_MC_rep (pert,n,n_vals,embed.dim=2,
+  corr.results.mc <-  bitflip_MC_rep (pert,n,n_vals,embed.dim=15,
                                       diss_measure="default",it.per.G=1,
                                       num_v_to_embed_at_a_time=1)
-  corr.results.list<- c(corr.results.list,list(corr.results.mc))
+  corr.results.list.300<- c(corr.results.list.300,list(corr.results.mc))
 }
 
 
