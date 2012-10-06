@@ -1,5 +1,7 @@
 
-JOFC.Insample.Embed.many.match <-function(D1,D2,D.W,ndimens,w.vals,sep.err.w,init.conf,wt.equalize){
+JOFC.Insample.Embed.many.match <-function(D1,D2,D.W,ndimens,
+                                          w.vals,sep.err.w,
+                                          init.conf,wt.equalize){
   #	if (profile.mode) Rprof("JOFC.FC.out",append=TRUE)
   n.1<- nrow(D1)
   n.2<- nrow(D2)
@@ -26,7 +28,7 @@ JOFC.Insample.Embed.many.match <-function(D1,D2,D.W,ndimens,w.vals,sep.err.w,ini
     Weight.Mat[is.na(D)]<-0
     D[is.na(D)] <-1
     
-    new.embed <- smacofM(D,ndimens    ,	W=Weight.Mat        ,
+    new.embed <- smacofM(D, ndim=ndimens    ,	W=Weight.Mat        ,
                          init    = init.conf,
                          verbose = FALSE,
                          itmax   = 1000,
@@ -86,7 +88,7 @@ graph2dissimilarity.many <- function (G,Gp,corr.list,
                                       graph.mode,
                                       vert_diss_measure,
                                       T.param,
-                                      num_v_to_embed_at_a_time  ,
+                                     
                                       weighted.g) {
   n.1<-nrow(G)
   n.2<-nrow(Gp)
@@ -186,8 +188,18 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
                                            graph.is.directed  =  FALSE,
                                            vert_diss_measure  =  "default",
                                            T.param  =  NULL,
-                                           num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
+                                          
                                            graph.is.weighted=FALSE   )  {
+##################################################
+#   JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
+#                                             in.sample.ind.1,in.sample.ind.2,
+#                                             d.dim,
+#                                             w.vals.vec,
+#                                             graph.is.directed  =  FALSE,
+#                                             vert_diss_measure  =  "default",
+#                                             T.param  =  NULL,
+#                                             num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
+#                                             graph.is.weighted=FALSE   )
   
   
   
@@ -213,7 +225,7 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
                                     graph.mode,
                                     vert_diss_measure,
                                     T.param,
-                                    num_v_to_embed_at_a_time  ,
+                                   
                                     weighted.g)
   
   
@@ -226,10 +238,7 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
   if (isSymmetric(Gp)) {print("Gp is symmetric")}
   else   {print("G is unsymmetric")}
   
-  #num_v_to_embed_at_a_time   <-   min(floor(1.2*sum(in.sample.ind)),sum(!in.sample.ind))
-  #num_v_to_embed_at_a_time   <-   sum(!in.sample.ind)
-  print("num_v_to_embed_at_a_time")
-  print(num_v_to_embed_at_a_time)
+
   
   
   
@@ -237,12 +246,15 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
   Embed.List <- Embed.Nodes.many (D.Mats,
                                   in.sample.ind.1,
                                   in.sample.ind.2,
-                                  
+                                  corr.list,
                                   d.start  =  d.dim,
                                   wt.equalize=FALSE,
-                                  separability.entries.w=FALSE,
+                                  use.separability.dissim=FALSE,
                                   assume.matched.for.oos = FALSE ,
                                   w.vals=w.vals.vec)
+
+
+
   
   J <-  list()
   for (Y.embed in Embed.List){
@@ -299,6 +311,8 @@ jofc.many<-function(G,Gp,corr.list,
                     # if FALSE, join the graphs and compute dissimilarities from joint graph
                     
 ){
+  
+  stop("Obsolete function")
   n.1<-nrow(G)
   n.2<-nrow(Gp)
   test.m.1<-sum(!in.sample.ind.1)
@@ -411,7 +425,7 @@ jofc.many<-function(G,Gp,corr.list,
                                in.sample.ind.1,in.sample.ind.2 ,oos ,
                                d=d.dim,
                                wt.equalize=FALSE,
-                               separability.entries.w=FALSE,
+                               use.separability.dissim=FALSE,
                                assume.matched.for.oos = FALSE,
                                w.vals=w.vals.vec)	
   
@@ -425,102 +439,6 @@ jofc.many<-function(G,Gp,corr.list,
     
   }
   return(J)
-}
-
-
-
-jofc.diffusion.dist.many<-function(G,Gp,corr.list,
-                                   in.sample.ind.1,in.sample.ind.2,
-                                   d.dim,
-                                   w.vals.vec,
-                                   graph.is.directed=FALSE,
-                                   oos=TRUE,
-                                   
-                                   wt.matrix.1=NULL,
-                                   wt.matrix.2=NULL,
-                                   sep.graphs=TRUE, # if TRUE, treat two graphs separately to compute dissimilarities
-                                   #and impute W (off-diagonalblock matrix)
-                                   # if FALSE, join the graphs and compute dissimilarities from joint graph
-                                   T.param=1
-){
-  n.1<-nrow(G)
-  n.2<-nrow(Gp)
-  test.m.1<-sum(!in.sample.ind.1)
-  test.m.2<-sum(!in.sample.ind.2)
-  
-  graph.mode<- ifelse(graph.is.directed,"directed","undirected")
-  
-  
-  if (sep.graphs){
-    if (is.null(wt.matrix.1)){
-      D.1<-diff.dist.fun(G,T.param)
-      D.2<-diff.dist.fun(Gp,T.param)
-    } else{
-      D.1<-diff.dist.fun(wt.matrix.1,T.param)
-      D.2<-diff.dist.fun(wt.matrix.2,T.param)
-    }
-    D.w<- matrix(NA,n.1,n.2)
-    for (corr.i in corr.list){
-      for ( i in corr.i[[1]]){
-        for ( j in corr.i[[2]]){
-          D.w[i,j]<-0
-        }
-      }
-    }
-    D.M<- omnibusM(D.1,D.2,D.w)
-  }	else{ #combine graphs and compute distances on joint graph
-    if (is.null(wt.matrix.1)){
-      for (corr.i in corr.list){
-        for ( i in corr.i[[1]]){
-          for ( j in corr.i[[2]]){
-            A.M[i,j]<-1
-          }
-        }
-      }    
-      #A.M[!in.sample.ind[1:n]]<- 0
-      G.comb<-omnibusM(G,Gp,A.M)
-      #compute dissimilarities in joint graph
-      D.M<-diff.dist.fun(G.comb,T.param)
-      D.M[is.infinite(D.M)]<-NA
-    } else{
-      wt.W<-matrix(Inf,n.1,n.2)
-      for (corr.i in corr.list){
-        for ( i in corr.i[[1]]){
-          for ( j in corr.i[[2]]){
-            wt.W[i,j]<-1
-          }
-        }
-      }    
-      
-      
-      Wt.M<-omnibusM(wt.matrix.1,wt.matrix.2,wt.W)
-      D.M<-diff.dist.fun(Wt.M,T.param)
-      D.M[is.infinite(D.M)]<-NA
-    }
-    
-  }
-  
-  
-  
-  Embed.List<-Embed.Nodes.many(D.M[1:n.1,1:n.1],D.M[n.1+(1:n.2),n.1+(1:n.2)],D.M[1:n.1,n.1+(1:n.2)],
-                               in.sample.ind.1,in.sample.ind.2 ,oos ,
-                               d=d.dim,
-                               wt.equalize=FALSE,
-                               separability.entries.w=FALSE,
-                               assume.matched.for.oos = FALSE,
-                               w.vals=w.vals.vec)	
-  J<-list()
-  for (Y.embed in Embed.List){
-    print("dim(Y.embed)")
-    print(dim(Y.embed))	
-    
-    
-    Dist=as.matrix(dist(Y.embed))[1:test.m.1,(1:test.m.2)+test.m.1]
-    J<-c(J,list(Dist))
-    
-  }
-  return(J)
-  
 }
 
 
@@ -534,13 +452,14 @@ jofc.diffusion.dist.many<-function(G,Gp,corr.list,
 Embed.Nodes.many <-function(D.Mats,
                             in.sample.ind.1,
                             in.sample.ind.2,
-                            oos, 
-                            d,
+                            corr.list,
+                           
+                            d.start,
                             wt.equalize=FALSE,
-                            separability.entries.w=FALSE,
+                            use.separability.dissim=FALSE,
                             assume.matched.for.oos = FALSE ,
                             w.vals=0.99){
-  
+  mds.init.method <- "gower"
   D.1 <- D.Mats$D.1
   D.2 <- D.Mats$D.2
   D.W <- D.Mats$D.W
@@ -550,23 +469,24 @@ Embed.Nodes.many <-function(D.Mats,
   n.2<-nrow(D.2)
   in.sample.ind <- c(in.sample.ind.1,in.sample.ind.2)
   in.indices<- which(in.sample.ind)
-  oos.indices<- which(oos.sample.ind)
+  oos.indices <- which(in.sample.ind)
+  
   n.1.in <- sum(in.sample.ind.1)
   n.2.in <- sum(in.sample.ind.2)
   
-  test.m.1 <- n.1 - n.1.in
-  test.m.2 <- n.2 - n.2.in
-  test.m <- test.m.1+test.m.2
+  test.m <- (test.m.1 <- n.1 - n.1.in) + (test.m.2 <- n.2 - n.2.in)
+  
   n.1.oos <- n.1-n.1.in 
   n.2.oos <- n.2-n.2.in
   in.indices.1<- in.indices[1:n.1.in]
-  in.indices.2<- in.indice[n.1.in+(1:n.2.in)]
+  in.indices.2<- in.indices[n.1.in+(1:n.2.in)]
+  in.indices.2.for.2 <- which(in.sample.ind.2)
   
   
   oos.indices.1<- oos.indices[1:(test.m.1)]
   oos.indices.2<-  oos.indices[test.m.1+(1:test.m.2)]
   
-  Y.embeds<-list()
+  
   oos.use.imputed<- FALSE
   w.max.index<-length(w.vals)
   
@@ -584,20 +504,128 @@ Embed.Nodes.many <-function(D.Mats,
   D.in<-omnibusM(D.in.1,D.in.2,D.in.W)
   init.conf=NULL
   if (sum(is.na(D.in))==0) {		
-    init.conf<-cmdscale(d=D.in,k=d)
+    init.conf<-cmdscale(d=D.in,k=d.start)
   }	
   
   #   # Find the minimum embedding dimension that matches all the seeds correctly
-  #   full.seed.match  <-   FALSE
-  #   embed.dim  <-  d.start
-  #   prevTrueMatch = -1
-  #   True.match.last.memory <- rep(-1,3)
-  #   X.embeds <- list()
-  #   while  (!full.seed.match) {
-  #     embed.dim   <-   embed.dim + 1
+  full.seed.match  <-   FALSE
+  
+  d.increment <- 5
+  embed.dim  <-  d.start - d.increment
+  
+  prevTrueMatch = -1
+  True.match.last.memory <- rep(-1,3)
+  X.embeds <- list()
+  
+  while  (!full.seed.match) {
+    embed.dim   <-   embed.dim + d.increment
+      
+    X.embeds <-JOFC.Insample.Embed.many.match(D.in.1,D.in.2,D.in.W,
+                                             ndimens = embed.dim,
+                                             w.vals=w.vals,
+                                             sep.err.w = use.separability.dissim,
+                                             init.conf=init.conf,
+                                             wt.equalize=wt.equalize)
+    
+    pw.dist.insample <- as.matrix(dist(X.embeds[[1]]))
+    dist.matrix <- (pw.dist.insample[n.1.in+(1:n.2.in), 1:n.1.in])
+    rownames(dist.matrix)<-paste("single",in.indices.2.for.2)
+    colnames(dist.matrix)<-paste("many",in.indices.1)
+    
+    
+    insample.match <-   fullmatch(dist.matrix,min.controls=1,max.controls=10)
+    
+    insample.perf <- present.many(insample.match, in.sample.ind.1=   rep (F,n.1.in),
+                                  in.sample.ind.2= rep(F,n.2.in),
+                                  corr.list=corr.list)
+    print (paste(c(embed.dim, summary(insample.perf$F)),collapse=" "))
+    print (paste(c(embed.dim, summary(insample.perf$R)),collapse=" "))
+    print (paste(c(embed.dim, summary(insample.perf$P)),collapse=" "))
+    
+    if (mean(insample.perf$F)>0.95) full.seed.match <- TRUE
+    
+    
+    
+  }
+  
+  #embed.dim  <-  d.start - d.increment
+  
+  #prevTrueMatch = -1
+  #True.match.last.memory <- rep(-1,3)
+  #X.embeds <- list()
+  Y.embeds<-list()
+  
+  
+  
+  
+  # while  (!full.seed.match) {
+  #   embed.dim   <-   embed.dim + d.increment
+  
+  #X.embeds<-JOFC.Insample.Embed.many.match(D.in.1,D.in.2,D.in.W,
+   #                                        d=embed.dim,w.vals,use.separability.dissim,
+   #                                        init.conf=init.conf,
+   #                                        wt.equalize=wt.equalize)
+  
+  
+  for (l in 1:w.max.index){
+    if (verbose) print("OOS embedding for JOFC for w= \n")
+    
+    
+    w.val.l <- w.vals[l]
+    X <- X.embeds[[l]]
+    Y.w <- matrix(0,test.m,d)
+    
+    #Compute Weight matrix corresponding in-sample  entries
+    # Since we are going to oos-embedding, set the weights  of in-sample embedding of stress
+    # We are using previous in-sample embeddings, anyway
+    oos.Weight.mat.in<-matrix(0,n.1.in+n.2.in,n.1.in+n.2.in)
+    
+    
+    
+    for (oos.samp.i in 1:test.m){
+      omnibus.oos.D.0 <- rbind(
+        cbind(D.in,D.omnibus[in.indices,oos.indices[oos.samp.i]]),
+        cbind(D.omnibus[oos.indices[oos.samp.i],in.indices],0)
+      )
+      
+      
+      #Compute Weight matrix corresponding OOS  entries
+      oos.Weight.mat.oos <- 0
+      oos.Weight.mat.in.oos <- rep(c(1-w,NA),c(n.1.in,n.2.in))
+      
+      oos.Weight.mat <- omnibusM(oos.Weight.mat.in,oos.Weight.mat.oos,oos.Weight.mat.in.oos)
+      
+      oos.Weight.mat[is.na(omnibus.oos.D.0)]<-0
+      omnibus.oos.D.0[is.na(omnibus.oos.D.0)]<-1
+      
+      if (verbose) print("JOFC null omnibus OOS embedding \n")
+      
+      Y.0t<-oosIM(D=omnibus.oos.D.0,
+                  X=X,
+                  init     = mds.init.method,
+                  verbose  = FALSE,
+                  itmax    = 1000,
+                  eps      = 1e-8,
+                  W        = oos.Weight.mat,
+                  isWithin = NULL,
+                  bwOos    = FALSE)
+      Y.w[oos.samp.i,]<-Y.0t
+      
+    }
+    
+    
+    
+    
+    if (verbose) print("JOFC alternative omnibus OOS embedding \n")
+    Y.embeds<-c(Y.embeds,list(Y))
+  }
+  
+  
+  
+  
   #     
   #     X.embeds <-  try(JOFC.Insample.Embed(D.in,embed.dim,
-  #                                          w.vals,separability.entries.w,
+  #                                          w.vals,use.separability.dissim,
   #                                          init.conf  =  init.conf,
   #                                          wt.equalize  =  wt.equalize))
   #     if (inherits(X.embeds,"try-error")) {
@@ -626,114 +654,81 @@ Embed.Nodes.many <-function(D.Mats,
   #     True.match.last.memory[3] <-   numTrueMatch
   #     
   #   }
-  
-  
-  
-  X.embeds<-JOFC.Insample.Embed.many.match(D.in.1,D.in.2,D.in.W,d,w.vals,separability.entries.w,init.conf=init.conf,
-                                           wt.equalize=wt.equalize)
-  for (l in 1:w.max.index){
-    if (verbose) print("OOS embedding for JOFC for w= \n")
     
-    
-    w.val.l <- w.vals[l]
-    X <- X.embeds[[l]]
-    Y.w <- matrix(0,test.m,d)
-    
-    #Compute Weight matrix corresponding in-sample  entries
-    # Since we are going to oos-embedding, set the weights  of in-sample embedding of stress
-    # We are using previous in-sample embeddings, anyway
-    oos.Weight.mat.1<-matrix(0,n.1.in+n.2.in,n.1.in+n.2.in)
-    
-    
-    
-    for (oos.samp.i in 1:test.m){
-      omnibus.oos.D.0 <- rbind(
-        cbind(D.in,D.omnibus[in.indices,oos.indices[oos.samp.i]]),
-        cbind(D.omnibus[oos.indices[oos.samp.i],in.indices],0)
-      )
-      
-      
-      #Compute Weight matrix corresponding OOS  entries
-      oos.Weight.mat.2 <- 0
-      oos.Weight.mat.w <- 1-w
-      
-      oos.Weight.mat<-omnibusM(oos.Weight.mat.1,oos.Weight.mat.2,oos.Weight.mat.w)
-      
-      
-      in.sample.ind<-c(in.sample.ind.1,in.sample.ind.2)
-      
-      
-      oos.Weight.mat[is.na(omnibus.oos.D.0)]<-0
-      omnibus.oos.D.0[is.na(omnibus.oos.D.0)]<-1
-      
-      if (verbose) print("JOFC null omnibus OOS embedding \n")
-      
-      Y.0t<-oosIM(D=omnibus.oos.D.0,
-                  X=X,
-                  init     = "random",
-                  verbose  = FALSE,
-                  itmax    = 1000,
-                  eps      = 1e-8,
-                  W        = oos.Weight.mat,
-                  isWithin = NULL,
-                  bwOos    = FALSE)
-      Y.w[oos.samp.i,]<-Y.0t
-      
-    }
-    
-    if (verbose) print("JOFC alternative omnibus OOS embedding \n")
-    Y.embeds<-c(Y.embeds,list(Y))
-  }
-  
-  
   return(Y.embeds)
   
 }
 
-solveMarriage.many<- function(Dist){
-  matches<-fullmatch(Dist)
+solveMarriage.many<- function(Dist,max.match){
+  matches<-fullmatch(Dist,min.controls=1,max.controls=max.match)
   return(matches)
   
 }
 
 present.many<-function(M,corr.list,in.sample.ind.1,in.sample.ind.2){
-  test.m.2.indices <- which(!in.sample.ind.2)
-  test.m.1.indices <- which(!in.sample.ind.1)
-  
-  test.m.1<-length(test.m.1.indices)
-  test.m.2<-length(test.m.2.indices)
+
+  M.levels<-levels(M)
+  test.m.2<-length(M.levels)
+ 
   precision.list<-rep(0,test.m.2)
   recall.list<-rep(0,test.m.2)
   F.meas.list<-rep(0,test.m.2)
-  for (test.i in 1:test.m.2){
-    M.i<- test.i+test.m.1
+  
+  if (debug.mode) {
+    print("Match levels")
+    print((M.levels))
     
-    match.label<- M[M.i]
+    print(head(names(M)))
+    
+  }
+  
+  for (match.label in M.levels){
+
+    
     #match.label:The match label for test.i^{th} instance in the second group
-    matches.i.indic <- M[1:test.m.1]==match.label
+    matches.i.indic <- M == match.label
     #matches.i.indic: the indicator(logical) vector for which of the instances in the first group
     #match test.i^{th} instance in the second group
-    matches.indices.i<- test.m.1.indices[matches.i.indic]
-    #matches.indices.i the indices for the instances the indicator vector
-    for (corr.i in corr.list){
-      for ( j in corr.i[[2]]){ # necessary only  if it's k-k matching instead  
-        if (j==test.m.2.indices[test.i]){ #sanity check
-          true.matches<-matches.indices.i%in%corr.i[[1]] #which of the matches found are in the list of true matches 
-          precision<- sum(true.matches)/length(true.matches) #what proportion of the matches found are correct
-          recall <-sum(true.matches)/length(corr.i[[1]]) #what proportion of the true matches are found
-          p.r<-(precision+recall)
-          F.meas<-0
-          if(p.r!=0)
-            F.meas<- 2*precision*recall/p.r
-          
-          precision.list[test.i]<-precision
-          recall.list[test.i]<-recall
-          F.meas.list[test.i]<-F.meas
-          break
-        }
-      }
+    test.2.in.match<-charmatch("single",names(M[matches.i.indic]))
+    if (test.2.in.match==0) {
+      print("more than one vertex is found in test.2. Only 1-k matching is allowed")
+      stop()
     }
+    
+    test.1.match.labels<- names(M[matches.i.indic][-test.2.in.match])
+    #assuming names begin with the string "many"
+    matches.indices.i <- as.numeric(substr(test.1.match.labels,5,nchar(test.1.match.labels)))
+    #matches.indices.i the indices for the instances the indicator vector
+   
+    test.2.name <- names(M[matches.i.indic])[test.2.in.match]
+    #assuming names begin with the string "many"
+    test.2.index <- as.numeric(substr(test.2.name,7,nchar(test.2.name)))
+    corr.i <- corr.list[[test.2.index]]
+    if (test.2.index!=corr.i[[2]])  {  #sanity check for 1-k matching
+      print("Something wrong with the indexing assumptions, corr.list value 
+            isn't consistent with value found at the result of the matching")
+      stop()
+    }
+    
+    if (debug.mode) {
+      print(paste(c("matched.indices.i ", matches.indices.i)) )
+      print(paste(c("test.2.index ", test.2.index)) )
+    }
+    
+    true.matches<-matches.indices.i%in%corr.i[[1]] #which of the matches found are in the list of true matches 
+    precision<- sum(true.matches)/length(true.matches) #what proportion of the matches found are correct
+    recall <-sum(true.matches)/length(corr.i[[1]]) #what proportion of the true matches are found
+    p.r<-(precision+recall)
+    F.meas<-0
+    if(p.r!=0)
+      F.meas<- 2*precision*recall/p.r
+    
+    precision.list[test.2.index]<-precision
+    recall.list[test.2.index]<-recall
+    F.meas.list[test.2.index]<-F.meas
+    
   }
+
   return(list(P=precision.list,R=recall.list,F=F.meas.list))	
 }
 
