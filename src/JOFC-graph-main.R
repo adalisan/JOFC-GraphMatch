@@ -167,9 +167,15 @@ corr.matches.e<-enron_exp(num_iter=5,n_vals=n_vals_enron,embed.dim=2)
 n_vals_worm=c(seq(20,100,20),seq(125,200,25))
 n_vals_worm=c(20,50,100,150,200)
 
-corr.matches.wt.dice<-worm_exp(num_iter=10,n_vals=n_vals_worm,embed.dim=10,
+corr.matches.wt.dice<-worm_exp(num_iter=25,n_vals=n_vals_worm,embed.dim=10,
                                weighted.graph=TRUE,diss_measure="C_dice_weighted")
 avg.corr.worm.wt.dice <- corr.matches.wt.dice/(253-n_vals_worm)
+
+
+
+corr.matches.wt.dice.unwt<-worm_exp(num_iter=25,n_vals=n_vals_worm,embed.dim=10,
+                               weighted.graph=FALSE,diss_measure="C_dice_weighted")
+avg.corr.worm.wt.dice.unwt <- corr.matches.wt.dice/(253-n_vals_worm)
 
 
 
