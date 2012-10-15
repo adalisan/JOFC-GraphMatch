@@ -685,7 +685,8 @@ run.jofc <- function(D1, D2, D10A,D20,D2A,
 		if (verbose) print(str(M))
 		if (verbose) print(str(init.conf))
 		# Embed in-sample using different weight matrices (differentw values)
-		X.embeds<-JOFC.Insample.Embed(M,d,w.vals,separability.entries.w,init.conf=init.conf,wt.equalize=wt.equalize)
+		X.embeds<-JOFC.Insample.Embed(M,d,w.vals,separability.entries.w,
+				init.conf=init.conf,wt.equalize=wt.equalize)
 		
 		Fid.Err.Term.1 <- X.embeds[[w.max.index+2]]
 		Fid.Err.Term.2 <- X.embeds[[w.max.index+3]]

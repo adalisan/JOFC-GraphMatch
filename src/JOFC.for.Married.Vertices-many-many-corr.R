@@ -2,6 +2,7 @@
 debug.mode<-TRUE
 require(igraph)
 require(optmatch)
+require(MASS)
 source("./lib/simulation_math_util_fn.R")
 source("./lib/smacofM.R")
 source("./lib/oosIM.R")
@@ -18,13 +19,14 @@ a.cep <-20
 
 
 n.1 = 40
-n.2 = 25
+n.2 = 100
 n<- n.2
-m = 5 # number of test nodes in the second graph that  are to-be-matched
+m = 20 # number of test nodes in the second graph that  are to-be-matched
 
 
-nmc = 100
+
 pert=(0:5)/10
+pert= c(0,0.1,0.3,0.5)
 
 npert <-  length(pert)
 
@@ -63,7 +65,6 @@ dims.for.dist <- 1:d.dim
 
 seed<-123
 
-nmc<-100
 
 gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
   npert <-  length(pert)
@@ -91,8 +92,9 @@ gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
   Gp.list <- list()
   for(ipert in 1:npert)
   {
-   
-    Gp<-bitflip(G.orig ,pert[ipert],pert[ipert])
+    
+    #Gp<-bitflip(G.orig ,pert[ipert],pert[ipert])
+    Gp<-G.orig
     Gp.list<-c(Gp.list,list(Gp))
     G.t<-bitflip(G ,pert[ipert],pert[ipert])
     G.list<-c(G.list,list(G.t))
@@ -104,12 +106,16 @@ gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
 
 
 m_i <- m
-nmc <- 1
+nmc <- 25
+
+
+
 
 for(imc in 1:nmc)
 {
   repeat.counts <-1+rgeom(n,0.2)
   repeat.counts[repeat.counts>10]=10;
+  #  repeat.counts <-rep(1,n)
   new.n <- sum(repeat.counts)
   
   gen.graph.pair <- gen.1.to.k.matched.graphs(n,pert,repeat.counts)
@@ -132,27 +138,46 @@ for(imc in 1:nmc)
   #if (imc==1) print(in.sample.ind)
   
   for (pert_i in  1:npert) {
-  Gp <- Gp.list[[pert_i]]
-  G <- G.list[[pert_i]]
-  J.1 =JOFC.graph.custom.dist.many (G, Gp, corr.list,
-                                in.sample.ind.1,in.sample.ind.2,
-                                d.dim=d.start,
-                                w.vals.vec=w.vals.vec,
-                                graph.is.directed=FALSE,
+    Gp <- Gp.list[[pert_i]]
+    G.rep <- G.list[[pert_i]]
+    J.1 =JOFC.graph.custom.dist.many (G.rep, Gp, corr.list,
+                                      in.sample.ind.1,in.sample.ind.2,
+                                      d.dim=d.start,
+                                      w.vals.vec=w.vals.vec,
+                                      graph.is.directed=FALSE,
                                       vert_diss_measure  =  'C_dice_weighted',
                                       T.param  =  NULL,
                                       
                                       graph.is.weighted=TRUE)
-
-  
-  M = solveMarriage(J.1[[1]])
-  match.perf.eval <- present.many(M,corr.list,in.sample.ind.1,in.sample.ind.2)
-  nc.jofc.diff.p[ipert,imc] = mean(match.perf.eval$P)
-  nc.jofc.diff.r[ipert,imc] = mean(match.perf.eval$R)
-  nc.jofc.diff.f[ipert,imc] <- mean(match.perf.eval$F)
+    
+    print(head(J.1[[1]]))
+    print(diag(J.1[[1]]))
+    M = solveMarriage.many(J.1[[1]],10)
+    match.perf.eval <- present.many(M,corr.list)
+    nc.jofc.diff.p[pert_i,imc] = mean(match.perf.eval$P)
+    nc.jofc.diff.r[pert_i,imc] = mean(match.perf.eval$R)
+    nc.jofc.diff.f[pert_i,imc] <- mean(match.perf.eval$F)
+    print(dim(nc.jofc.diff.p))
+    if (pert_i>1 && imc>1){
+      print("Precision")
+      print(apply(nc.jofc.diff.p[,1:imc],1,mean))
+      print("Recall")
+      print(apply(nc.jofc.diff.r[,1:imc],1,mean))
+      print("F-measure")
+      print(apply(nc.jofc.diff.f[,1:imc],1,mean))
+    }
+    else{
+      print("Precision")
+      print(nc.jofc.diff.p[pert_i,1:imc])
+      print("Recall")
+      print(nc.jofc.diff.r[pert_i,1:imc])
+      print("F-measure")
+      print(nc.jofc.diff.f[pert_i,1:imc])
+    } 
+      
   }
- 
-
+  
+  
 }
 
 

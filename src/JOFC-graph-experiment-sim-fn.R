@@ -238,7 +238,7 @@ worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss
 }
 
 
-worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default") {
+worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default",symmetrize=TRUE) {
   
   load("./data/celegansGraph.Rd")
 	sum_row_c = apply(Ac,1,sum)
@@ -260,11 +260,16 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
  
     
     #symmetrize
+    if (symmetrize){
     Ac_graph <- (Ac_graph+t(Ac_graph))/2
     Ag_graph <- (Ag_graph+t(Ag_graph))/2
+    }
   } else{
+     if (symmetrize){
+
     Ac_graph <- (Ac+t(Ac))/2
     Ag_graph <- (Ag+t(Ag))/2
+}
     Ac_graph<- (Ac_graph>0)
     Ag_graph<- (Ag_graph>0)
   }
