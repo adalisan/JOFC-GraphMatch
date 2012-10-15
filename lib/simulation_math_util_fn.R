@@ -1378,6 +1378,54 @@ plot.graph.with.CI<-function(plot.roc.points,plot.title,plot.col,conf.int=TRUE,a
 
 
 
+plot.graph.with.CI.error<-function(plot.roc.points,plot.title,plot.col,
+                                   conf.int=TRUE,add=FALSE,fp.points=seq(0,1,0.01),
+                                   customx.labels=NULL,customy.labels=NULL,
+                                   ispowercurve=TRUE,...){
+  
+  standardx.axis <- FALSE
+  standardy.axis <- FALSE
+  if (is.null(customx.labels))
+    standardx.axis<-TRUE
+  if (is.null(customy.labels))
+    standardy.axis<-TRUE
+  
+  num.sims<-dim(plot.roc.points)[1]
+  
+  y.points<-colMeans(plot.roc.points,na.rm=TRUE)
+  var.y.points <-rep (0,length(fp.points))
+  var.y.points <- colVars(plot.roc.points,na.rm=TRUE)
+  std.y.points <- 2*sqrt(var.y.points)
+  ucl <- y.points+std.y.points/sqrt(num.sims)
+  lcl <- y.points-std.y.points/sqrt(num.sims)
+  
+  if (add){
+    lines(x=fp.points,y= y.points,main=plot.title,
+          col=plot.col,xaxt=ifelse(standardx.axis,"s","n"),
+          yaxt=ifelse(standardy.axis,"s","n"), lwd=2.5,xlab="",ylab="")
+    
+  }
+  else{
+    plot(x=fp.points,y= y.points,main=plot.title,xaxt=ifelse(standardx.axis,"s","n"),
+         yaxt=ifelse(standardy.axis,"s","n"), col=plot.col,type='l',lwd=2.5,...)
+  }
+  
+  if (!standardx.axis)
+    axis(1, at=fp.points,labels=customx.labels)
+  if (!standardy.axis)		
+    axis(2, at=y.points,labels=customy.labels)
+  
+  
+  
+  if (conf.int){
+    arrows(fp.points,ucl,fp.points,lcl,length=.05,angle=90,code=3, lty=3,col=plot.col)
+  }
+  
+  par(lty=1)		
+}
+
+
+
 
 get_epsilon_c <- function(X, Y)
 ## Return commensurability error

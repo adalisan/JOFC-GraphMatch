@@ -18,30 +18,17 @@ oos.cep = TRUE
 a.cep <-20
 
 
-n.1 = 40
-n.2 = 100
-n<- n.2
+n<- 100
 m = 20 # number of test nodes in the second graph that  are to-be-matched
-
-
+m_vals <- c(10,20,50,80,90)
+m_len <- length(m_vals)
 
 pert=(0:5)/10
 pert= c(0,0.1,0.3,0.5)
 
 npert <-  length(pert)
 
-nc.jofc.diff.p = matrix(0,npert,nmc)
-nc.jofc.weighted.p = matrix(0,npert,nmc)
-nc.jofc.unweighted.p = matrix(0,npert,nmc)
-
-nc.jofc.diff.r = matrix(0,npert,nmc)
-nc.jofc.weighted.r = matrix(0,npert,nmc)
-nc.jofc.unweighted.r = matrix(0,npert,nmc)
-
-nc.jofc.diff.f = matrix(0,npert,nmc)
-nc.jofc.weighted.f = matrix(0,npert,nmc)
-nc.jofc.unweighted.f = matrix(0,npert,nmc)
-
+nc.jofc.dice.wt.p <- nc.jofc.dice.wt.r <- nc.jofc.dice.wt.f <- array(0,dim=c(npert,nmc,m_len))
 
 
 nc.cmds = matrix(0,npert,nmc)
@@ -105,9 +92,8 @@ gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
 }
 
 
-m_i <- m
-nmc <- 25
 
+nmc <- 25
 
 
 
@@ -124,61 +110,103 @@ for(imc in 1:nmc)
   corr.list <- gen.graph.pair$corr.list
   int.start.indices <- gen.graph.pair$int.start.indices
   int.end.indices   <- gen.graph.pair$int.end.indices
-  oos.sampling<-sample(1:n, size=m_i, replace=FALSE)
-  in.sample.ind.1<-rep(TRUE,new.n)
-  for ( s in 1:m){
-    a<-int.start.indices[oos.sampling[s]]
-    b<-int.end.indices[oos.sampling[s]]
-    in.sample.ind.1[a:b]<-FALSE
-  }
   
-  in.sample.ind.2<-rep(TRUE,n)
-  in.sample.ind.2[oos.sampling]<-FALSE
-  
-  #if (imc==1) print(in.sample.ind)
-  
-  for (pert_i in  1:npert) {
-    Gp <- Gp.list[[pert_i]]
-    G.rep <- G.list[[pert_i]]
-    J.1 =JOFC.graph.custom.dist.many (G.rep, Gp, corr.list,
-                                      in.sample.ind.1,in.sample.ind.2,
-                                      d.dim=d.start,
-                                      w.vals.vec=w.vals.vec,
-                                      graph.is.directed=FALSE,
-                                      vert_diss_measure  =  'C_dice_weighted',
-                                      T.param  =  NULL,
-                                      
-                                      graph.is.weighted=TRUE)
+  for (m_it in 1:m_len) {
+    m_i <- m_vals[m_it]
     
-    print(head(J.1[[1]]))
-    print(diag(J.1[[1]]))
-    M = solveMarriage.many(J.1[[1]],10)
-    match.perf.eval <- present.many(M,corr.list)
-    nc.jofc.diff.p[pert_i,imc] = mean(match.perf.eval$P)
-    nc.jofc.diff.r[pert_i,imc] = mean(match.perf.eval$R)
-    nc.jofc.diff.f[pert_i,imc] <- mean(match.perf.eval$F)
-    print(dim(nc.jofc.diff.p))
-    if (pert_i>1 && imc>1){
-      print("Precision")
-      print(apply(nc.jofc.diff.p[,1:imc],1,mean))
-      print("Recall")
-      print(apply(nc.jofc.diff.r[,1:imc],1,mean))
-      print("F-measure")
-      print(apply(nc.jofc.diff.f[,1:imc],1,mean))
+    oos.sampling<-sample(1:n, size=m_i, replace=FALSE)
+    in.sample.ind.1<-rep(TRUE,new.n)
+    for ( s in 1:m){
+      a<-int.start.indices[oos.sampling[s]]
+      b<-int.end.indices[oos.sampling[s]]
+      in.sample.ind.1[a:b]<-FALSE
     }
-    else{
-      print("Precision")
-      print(nc.jofc.diff.p[pert_i,1:imc])
-      print("Recall")
-      print(nc.jofc.diff.r[pert_i,1:imc])
-      print("F-measure")
-      print(nc.jofc.diff.f[pert_i,1:imc])
-    } 
+    
+    in.sample.ind.2<-rep(TRUE,n)
+    in.sample.ind.2[oos.sampling]<-FALSE
+    
+    #if (imc==1) print(in.sample.ind)
+    
+    for (pert_i in  1:npert) {
+      Gp <- Gp.list[[pert_i]]
+      G.rep <- G.list[[pert_i]]
+      J.1 =JOFC.graph.custom.dist.many (G.rep, Gp, corr.list,
+                                        in.sample.ind.1,in.sample.ind.2,
+                                        d.dim=d.start,
+                                        w.vals.vec=w.vals.vec,
+                                        graph.is.directed=FALSE,
+                                        vert_diss_measure  =  'C_dice_weighted',
+                                        T.param  =  NULL,
+                                        
+                                        graph.is.weighted=TRUE)
       
+      #print(head(J.1[[1]]))
+      #print(diag(J.1[[1]]))
+      M = solveMarriage.many(J.1[[1]],10)
+      match.perf.eval <- present.many(M,corr.list)
+      nc.jofc.dice.wt.p[pert_i,imc,m_it] = mean(match.perf.eval$P)
+      nc.jofc.dice.wt.r[pert_i,imc,m_it] = mean(match.perf.eval$R)
+      nc.jofc.dice.wt.f[pert_i,imc,m_it] <- mean(match.perf.eval$F)
+      print(dim(nc.jofc.dice.wt.p))
+      if (pert_i>1 && imc>1){
+        print("Precision")
+        print(apply(nc.jofc.dice.wt.p[,1:imc,m_it],1,mean))
+        print("Recall")
+        print(apply(nc.jofc.dice.wt.r[,1:imc,m_it],1,mean))
+        print("F-measure")
+        print(apply(nc.jofc.dice.wt.f[,1:imc,m_it],1,mean))
+      }
+      else{
+        print("Precision")
+        print(nc.jofc.dice.wt.p[pert_i,imc,m_it])
+        print("Recall")
+        print(nc.jofc.dice.wt.r[pert_i,imc,m_it])
+        print("F-measure")
+        print(nc.jofc.dice.wt.f[pert_i,imc,m_it])
+      } 
+      
+    }
+    
+    
   }
-  
-  
 }
+
+
+
+pdf("./graphs/plot-PRF.pdf")
+colors.vec<-c( "red","blue","orange","green")
+
+
+plot.graph.with.CI.error(t(nc.jofc.dice.wt.f),plot.title="",plot.col=colors.vec[1],
+                         conf.int=TRUE,add=FALSE,fp.points=pert,
+                         customx.labels=NULL,customy.labels=NULL,
+                         ispowercurve=FALSE,ylim=c(0,1),xlab="perturbation parameter",
+                         ylab="Average F-measure/Precision/Recall")
+
+plot.graph.with.CI.error(t(nc.jofc.dice.wt.p),plot.title="",plot.col=colors.vec[3],
+                         conf.int=TRUE,add=TRUE,fp.points=pert,
+                         customx.labels=NULL,customy.labels=NULL,
+                         ispowercurve=FALSE,ylim=c(0,1),xlab="perturbation parameter",
+                         ylab="Average F-measure/Precision/Recall")
+
+plot.graph.with.CI.error(t(nc.jofc.dice.wt.r),plot.title="",plot.col=colors.vec[4],
+                         conf.int=TRUE,add=TRUE,fp.points=pert,
+                         customx.labels=NULL,customy.labels=NULL,
+                         ispowercurve=FALSE,ylim=c(0,1),xlab="perturbation parameter",
+                         ylab="Average F-measure/Precision/Recall")
+
+legend.txt<- c("F-measure","Precision","Recall")
+legend(x="topright",legend=legend.txt, col =colors.vec[c(1,3,4)],pch=c(1,3,4))
+title("1-to-k matching o jofc")
+abline(h=1/(m),lty=2) ### chance?  apparently not!?
+abline(v=1/2,lty=2) ### chance?  gotta be!?
+dev.off()
+
+
+
+
+
+
 
 
 ### notice that the %correctmatches decreases as perturbation parameter increases! :-)
@@ -186,7 +214,7 @@ for(imc in 1:nmc)
 pdf("plot1.pdf")
 colors.vec<-c( "red","blue","orange","green")
 colors.vec<-colors.vec[1:4]
-plot(pert,apply(nc.jofc.diff.f,1,mean),xlab="perturbation parameter",ylab="Average F-measure",ylim=c(0,1),col=colors.vec[1])
+plot(pert,apply(nc.jofc.dice.wt.f,1,mean),xlab="perturbation parameter",ylab="Average F-measure",ylim=c(0,1),col=colors.vec[1])
 #points(pert,apply(nc.cmds,1,mean)/(n-m),xlab="perturbation parameter",ylab="Average F-measure",ylim=c(0,1),pch=2,col=colors.vec[2])
 
 points(pert,apply(nc.jofc.weighted.f,1,mean),xlab="perturbation parameter",ylab="Average F-measure",ylim=c(0,1),pch=3,col=colors.vec[3])
@@ -205,7 +233,7 @@ dev.off()
 pdf("plot2.pdf")
 colors.vec<-c( "red","blue","orange","green")
 colors.vec<-colors.vec[1:4]
-plot(pert,apply(nc.jofc.diff.p,1,mean),xlab="perturbation parameter",
+plot(pert,apply(nc.jofc.dice.wt.p,1,mean),xlab="perturbation parameter",
      ylab="Average precision/recall",ylim=c(0,1),col=colors.vec[1],type="l")
 #points(pert,apply(nc.cmds,1,mean)/(n-m),xlab="perturbation parameter",
 #     ylab="Average precision/recall",ylim=c(0,1),pch=2,col=colors.vec[2])
@@ -218,7 +246,7 @@ lines(pert,apply(nc.jofc.unweighted.p,1,mean),xlab="perturbation parameter",
       ylab="Average precision/recall",ylim=c(0,1),col=colors.vec[4])
 
 
-lines(pert,apply(nc.jofc.diff.r,1,mean),xlab="perturbation parameter",
+lines(pert,apply(nc.jofc.dice.wt.r,1,mean),xlab="perturbation parameter",
       ylab="Average precision/recall",ylim=c(0,1),lty=2,col=colors.vec[1])
 
 
