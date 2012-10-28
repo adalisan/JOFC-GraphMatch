@@ -1,6 +1,6 @@
 
 run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="default",
-                              graph.is.weighted=FALSE){
+                              graph.is.weighted=FALSE,...){
   
   
   matched.cost<-0.01
@@ -28,7 +28,7 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
                                                d.dim=embed.dim, w.vals.vec=0.5,graph.is.directed=FALSE, 
                                                vert_diss_measure=diss_measure,  T.param  =  2,
                                                num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time,
-                                               graph.is.weighted=graph.is.weighted)
+                                               graph.is.weighted=graph.is.weighted,...)
       #)
       
       if (inherits(jofc.result,"try-error")) {
@@ -277,7 +277,8 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
   corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
                                     embed.dim,diss_measure=diss_measure,
 						                       
-                                    graph.is.weighted=weighted.graph
+                                    graph.is.weighted=weighted.graph,
+                                    graph.is.symmetric = symmetrize
 						)
   
   return (corr.matches)

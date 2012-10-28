@@ -1,5 +1,6 @@
 
 debug.mode<-TRUE
+debug.mode.fine <-FALSE
 require(igraph)
 require(optmatch)
 require(MASS)
@@ -112,7 +113,7 @@ for(imc in 1:nmc)
   int.end.indices   <- gen.graph.pair$int.end.indices
   
   for (m_it in 1:m_len) {
-    m_i <- m_vals[m_it]
+    m<- m_i <- m_vals[m_it]
     
     oos.sampling<-sample(1:n, size=m_i, replace=FALSE)
     in.sample.ind.1<-rep(TRUE,new.n)
@@ -173,40 +174,62 @@ for(imc in 1:nmc)
 
 
 
-pdf("./graphs/plot-PRF.pdf")
+pdf("./graphs/plot-PRF2.pdf")
 colors.vec<-c( "red","blue","orange","green")
-
-
-plot.graph.with.CI.error(t(nc.jofc.dice.wt.f),plot.title="",plot.col=colors.vec[1],
-                         conf.int=TRUE,add=FALSE,fp.points=pert,
+par(lty=1)
+for (m_v_i in 1:m_len){
+par(lty=m_v_i)
+plot.graph.with.CI.error(t(nc.jofc.dice.wt.f[,,m_v_i]),plot.title="",plot.col=colors.vec[1],
+                         conf.int=TRUE,add=m_v_i>1,fp.points=pert,
                          customx.labels=NULL,customy.labels=NULL,
                          ispowercurve=FALSE,ylim=c(0,1),xlab="perturbation parameter",
                          ylab="Average F-measure/Precision/Recall")
-
-plot.graph.with.CI.error(t(nc.jofc.dice.wt.p),plot.title="",plot.col=colors.vec[3],
+par(lty=m_v_i)
+plot.graph.with.CI.error(t(nc.jofc.dice.wt.p[,,m_v_i]),plot.title="",plot.col=colors.vec[3],
                          conf.int=TRUE,add=TRUE,fp.points=pert,
                          customx.labels=NULL,customy.labels=NULL,
                          ispowercurve=FALSE,ylim=c(0,1),xlab="perturbation parameter",
                          ylab="Average F-measure/Precision/Recall")
-
-plot.graph.with.CI.error(t(nc.jofc.dice.wt.r),plot.title="",plot.col=colors.vec[4],
+par(lty=m_v_i)
+plot.graph.with.CI.error(t(nc.jofc.dice.wt.r[,,m_v_i]),plot.title="",plot.col=colors.vec[4],
                          conf.int=TRUE,add=TRUE,fp.points=pert,
                          customx.labels=NULL,customy.labels=NULL,
                          ispowercurve=FALSE,ylim=c(0,1),xlab="perturbation parameter",
                          ylab="Average F-measure/Precision/Recall")
-
+}
 legend.txt<- c("F-measure","Precision","Recall")
-legend(x="topright",legend=legend.txt, col =colors.vec[c(1,3,4)],pch=c(1,3,4))
 title("1-to-k matching o jofc")
 abline(h=1/(m),lty=2) ### chance?  apparently not!?
 abline(v=1/2,lty=2) ### chance?  gotta be!?
+legend.txt<-c(legend.txt,m_vals)
+ltypes<- c(rep(1,3),1:m_len)
+legend(x="topright",legend=legend.txt, col =colors.vec[c(c(1,3,4),rep(1,m_len))],lty=ltypes)
+
+
+
 dev.off()
 
+pdf("./graphs/F-measure_1_to_k_match.pdf")
+colors.vec<-c( "red","blue","orange","green","magenta")
+par(lty=1)
+for (m_v_i in 1:m_len){
+#  par(lty=m_v_i)
+  plot.graph.with.CI.error(t(nc.jofc.dice.wt.f[,,m_v_i]),plot.title="",plot.col=colors.vec[m_v_i],
+                           conf.int=TRUE,add=m_v_i>1,fp.points=pert,
+                           customx.labels=NULL,customy.labels=NULL,
+                           ispowercurve=FALSE,ylim=c(0,1),xlab="perturbation parameter",
+                           ylab="Average F-measure")
+}
+  
+legend.txt<- c()
+title("1-to-k matching o jofc")
+abline(h=1/(m),lty=2) ### chance?  apparently not!?
+abline(v=1/2,lty=2) ### chance?  gotta be!?
+legend.txt<-c(legend.txt,n-m_vals)
+ltypes<- c(1:m_len)
+legend(x="topright",legend=legend.txt, col =colors.vec[1:m_len],lty=1,title="Num. of Hard Seeds")
 
-
-
-
-
+dev.off()
 
 
 ### notice that the %correctmatches decreases as perturbation parameter increases! :-)

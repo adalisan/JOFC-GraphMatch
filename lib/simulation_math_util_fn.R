@@ -1402,7 +1402,7 @@ plot.graph.with.CI.error<-function(plot.roc.points,plot.title,plot.col,
   if (add){
     lines(x=fp.points,y= y.points,main=plot.title,
           col=plot.col,xaxt=ifelse(standardx.axis,"s","n"),
-          yaxt=ifelse(standardy.axis,"s","n"), lwd=2.5,xlab="",ylab="")
+          yaxt=ifelse(standardy.axis,"s","n"), lwd=2.5,xlab="",ylab="",...)
     
   }
   else{
@@ -1421,7 +1421,7 @@ plot.graph.with.CI.error<-function(plot.roc.points,plot.title,plot.col,
     arrows(fp.points,ucl,fp.points,lcl,length=.05,angle=90,code=3, lty=3,col=plot.col)
   }
   
-  par(lty=1)		
+ 		
 }
 
 
