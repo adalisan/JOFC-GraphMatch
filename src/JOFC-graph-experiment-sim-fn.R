@@ -1,6 +1,6 @@
 
 run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="default",
-                              graph.is.weighted=FALSE,...){
+                              graph.is.weighted=FALSE,graph.is.directed=FALSE,...){
   
   
   matched.cost<-0.01
@@ -25,10 +25,10 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
       jofc.result<- 
 	#try(
 	JOFC.graph.custom.dist(G,Gp,in.sample.ind=insample_logic_vec, 
-                                               d.dim=embed.dim, w.vals.vec=0.5,graph.is.directed=FALSE, 
+                                               d.dim=embed.dim, w.vals.vec=0.5, graph.is.directed= graph.is.directed, 
                                                vert_diss_measure=diss_measure,  T.param  =  2,
-                                               num_v_to_embed_at_a_time  = num_v_to_embed_at_a_time,
-                                               graph.is.weighted=graph.is.weighted,...)
+											   
+                                              ...)
       #)
       
       if (inherits(jofc.result,"try-error")) {
@@ -69,11 +69,11 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure="defau
 
 bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure,it.per.G=1, 
                             num_v_to_embed_at_a_time=NULL){
-  library(optmatch)
-  library(igraph)
-  library(MASS)
-  library(MCMCpack)
-  library(clue)
+  require(optmatch)
+  require(igraph)
+  require(MASS)
+  require(MCMCpack)
+  require(clue)
   source("./lib/graph_embedding_fn.R")
   source("./lib/simulation_math_util_fn.R")
   source("./lib/smacofM.R")
@@ -162,18 +162,35 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
     Ac_graph<- Ac>0
     Ag_graph<- Ag>0
   }
-  num.cores<-4
+  num.cores<-parallel::detectCores()
   iter_per_core <- ceiling(num_iter/num.cores)
-  require(doSMP)
+  require(foreach)
   
+
+  if (.Platform$OS.type != "windows" && require("multicore")) {
+  require(doMC)
+    registerDoMC()
+  } else if (FALSE &&                     # doSMP is buggy
+           require("doSMP")) {
   workers <- startWorkers(num.cores) # My computer has 4 cores
-  registerDoSMP(workers)
+       on.exit(stopWorkers(w), add = TRUE)
+    registerDoSMP(w)
+} else if (require("doSNOW")) {
+    cl <- snow::makeCluster(num.cores, type = "SOCK")
+    on.exit(snow::stopCluster(cl), add = TRUE)
+    registerDoSNOW(cl)
+    } else {
+    registerDoSEQ()
+}  
+
+    
+ 
   corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
     setwd('~/projects/DataFusion-graphmatch/')
-    library(optmatch)
-    library(igraph)
-    library(MASS)
-    library(MCMCpack)
+    require(optmatch)
+    require(igraph)
+    require(MASS)
+    require(MCMCpack)
     source("./lib/graph_embedding_fn.R")
     source("./lib/simulation_math_util_fn.R")
     source("./lib/smacofM.R")
@@ -191,50 +208,94 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
   return (list(agg=corr_match_list ))
 }  
 
-worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default") {
-  
-  load("./data/celegansGraph.Rd")
-  if (weighted.graph){
-    scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
-    Ac_graph <- Ac
-    Ag_graph <- scale_f*Ag
-    
-    
-    #symmetrize
-    Ac_graph <- (Ac_graph+t(Ac_graph))/2
-    Ag_graph <- (Ag_graph+t(Ag_graph))/2
-  } else{
-    
-    Ac_graph<- Ac>0
-    Ag_graph<- Ag>0
-  }
-  num.cores<-4
+worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default",symmetrize=TRUE) {
+	load("./data/celegansGraph.Rd")
+	
+	
+	sum_row_c = apply(Ac,1,sum)
+	sum_col_c = apply(Ac,2,sum)
+	sum_row_g = apply(Ag,1,sum)
+	sum_col_g = apply(Ag,2,sum)
+	
+	disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
+	Ac <- Ac[!disc_v,!disc_v]
+	Ag <- Ag[!disc_v,!disc_v]
+	graph.is.directed <- TRUE
+	if (weighted.graph){
+		
+		scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
+		Ac_graph <- Ac
+		Ag_graph <- scale_f*Ag
+		
+		
+		#symmetrize
+		if (symmetrize){
+			graph.is.directed <- FALSE
+			Ac_graph <- (Ac_graph+t(Ac_graph))/2
+			Ag_graph <- (Ag_graph+t(Ag_graph))/2
+		}
+	} else{
+		if (symmetrize){
+			graph.is.directed <- FALSE
+			Ac_graph <- (Ac+t(Ac))/2
+			Ag_graph <- (Ag+t(Ag))/2
+		}
+		Ac_graph<- (Ac_graph>0)
+		Ag_graph<- (Ag_graph>0)
+	}
+	num.cores<-parallel::detectCores()
+	iter_per_core <- ceiling(num_iter/num.cores)
+	
+	  num.cores<-parallel::detectCores()
   iter_per_core <- ceiling(num_iter/num.cores)
-  require(doSMP)
-  require(snowfall)
-  workers <- startWorkers(num.cores) # My computer has 4 cores
-  registerDoSMP(workers)
-  corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
-    setwd('~/projects/DataFusion-graphmatch/')
-    library(optmatch)
-    library(igraph)
-    library(MASS)
-    library(MCMCpack)
-    source("./lib/graph_embedding_fn.R")
-    source("./lib/simulation_math_util_fn.R")
-    source("./lib/smacofM.R")
-    source("./lib/oosIM.R")
-    source("./lib/diffusion_distance.R")
-    corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
-                                      embed.dim,diss_measure=diss_measure, graph.is.weighted=weighted.graph)
-  }
-  
-  #corr.results.avg <- array(0, dim( corr_match_list[[1]]))
-  #for (corr.results in corr_match_list){
-  #   corr.results.avg <- corr.results.avg+corr.results
-  #}  
-  #corr.results.avg <- corr.results.avg/length( corr_match_list)
-  return (list(agg=corr_match_list ))
+  require(foreach)
+
+
+  if (.Platform$OS.type != "windows" && require("multicore")) {
+  require(doMC)
+    registerDoMC()
+  } else if (FALSE &&                     # doSMP is buggy
+           require("doSMP")) {
+	workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
+       on.exit(stopWorkers(w), add = TRUE)
+    registerDoSMP(w)
+} else if (require("doSNOW")) {
+    cl <- snow::makeCluster(num.cores, type = "SOCK")
+    on.exit(snow::stopCluster(cl), add = TRUE)
+    registerDoSNOW(cl)
+    } else {
+    registerDoSEQ()
+}  
+
+	
+	corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
+		setwd('~/projects/DataFusion-graphmatch/')
+		require(optmatch)
+		require(igraph)
+		require(MASS)
+		require(MCMCpack)
+		require(clue)
+		source("./lib/graph_embedding_fn.R")
+		source("./lib/simulation_math_util_fn.R")
+		source("./lib/smacofM.R")
+		source("./lib/oosIM.R")
+		source("./lib/diffusion_distance.R")
+#		
+		corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
+				embed.dim,diss_measure=diss_measure,
+				
+				graph.is.weighted=weighted.graph,
+				graph.is.directed= graph.is.directed 
+		)
+		
+		corr.matches
+	}
+	
+
+	print (str(corr_match_list))
+	
+	
+	return (corr_match_list )
 }
 
 
@@ -249,7 +310,7 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
       disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
       Ac <- Ac[!disc_v,!disc_v]
       Ag <- Ag[!disc_v,!disc_v]
-
+	  graph.is.directed <- TRUE
   if (weighted.graph){
 	
     scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
@@ -261,12 +322,13 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
     
     #symmetrize
     if (symmetrize){
+		graph.is.directed <- FALSE
     Ac_graph <- (Ac_graph+t(Ac_graph))/2
     Ag_graph <- (Ag_graph+t(Ag_graph))/2
     }
   } else{
      if (symmetrize){
-
+		 graph.is.directed <- FALSE
     Ac_graph <- (Ac+t(Ac))/2
     Ag_graph <- (Ag+t(Ag))/2
 }
@@ -278,7 +340,7 @@ worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measur
                                     embed.dim,diss_measure=diss_measure,
 						                       
                                     graph.is.weighted=weighted.graph,
-                                    graph.is.symmetric = symmetrize
+                                   graph.is.directed= graph.is.directed 
 						)
   
   return (corr.matches)

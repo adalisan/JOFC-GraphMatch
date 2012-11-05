@@ -25,8 +25,8 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 		wt.equalize,
 		
 		verbose=FALSE,
-		power.comparison.test=TRUE
-		,cca.reg=FALSE){
+		power.comparison.test=TRUE,
+		cca.reg=FALSE){
 	
 	print(paste("random ",runif(1)))
 	print("run.mc.replicate")
@@ -73,92 +73,14 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	Fid.Err.Term.2 <- array(0,dim=c(w.max.index))
 	Comm.Err.Term <- array(0,dim=c(w.max.index))
 	
-	sigma <- matrix(0,p,p)
 	means <- array(0 , dim=c(w.max.index,2*d))
 	
-	
-	
-	if (is.null(alpha)) {
-		if (model=="gaussian"){
-			sigma<- diag(p)
-			if (old.gauss.model.param) sigma <-Posdef(p,r)
-			alpha.mc <- mvrnorm(n+(2*m), rep(0,p),sigma)
-		} else if (model=="dirichlet"){
-			alpha.mc <- rdirichlet(n+2*m, rep(1,p+1))
-		} else stop("unknown model")
-		
-		
-	} else {
-		alpha.mc <- alpha[[mc]]
-	}
-	## optimal power
-	optim.power<- c()
-	if (model=="gaussian"){
-		for  (aleph in size){
-			crit.val.1<-qgamma(aleph,(p)/2,scale=2/r,lower.tail=FALSE)
-			crit.val.2<-crit.val.1
-			type.2.err<-pgamma(crit.val.2,shape=(p)/2,scale=2*(1+1/r))
-			beta<- 1-type.2.err
-			optim.power<- c(optim.power,beta)
-		}
-	}
-	
-	
-	## n pairs of matched points
-	if (model=="gaussian"){
-		xlist <- matched_rnorm(n, p, q, c.val, r, alpha=alpha.mc[1:n, ],sigma.alpha=sigma,old.gauss.model.param=old.gauss.model.param)
-	} else{
-		xlist <- matched_rdirichlet(n, p, r, q, c.val, alpha.mc[1:n, ])
-	}
-	X1 <- xlist$X1
-	X2 <- xlist$X2
-	if (model=="gaussian")
-		sigma.mc<-xlist$sigma.beta
-	
-	D1 <- dist(X1)
-	D2 <- dist(X2)
-	
-	if (verbose) print("random matched pairs generated\n")
-	
-	#prescaling
-	if (pre.scaling) {
-		s <- lm(as.vector(D1) ~ as.vector(D2) + 0)$coefficients
-	} else {
-		s <- 1
-	}
-	
-	#m pairs of unmatched points
-	if (model=="gaussian"){
-		## test observations -- m pairs of matched and m pairs of unmatched
-		ylist <- matched_rnorm(m, p, q, c.val, r, alpha=alpha.mc[(n+1):(n+m), ],
-				sigma.alpha=sigma,old.gauss.model.param=old.gauss.model.param, sigma.beta=sigma.mc)
-		Y2A <- matched_rnorm(m, p, q, c.val, r, alpha=alpha.mc[(n+m+1):(n+m+m), ],
-				sigma.alpha=sigma,old.gauss.model.param=old.gauss.model.param, sigma.beta=sigma.mc)$X2
-	} else{
-		ylist <- matched_rdirichlet(m, p, r, q, c.val, alpha.mc[(n+1):(n+m), ])
-		Y2A <- matched_rdirichlet(m, p, r, q, c.val, alpha.mc[(n+m+1):(n+m+m), ])$X2
-	}
-	Y1 <- ylist$X1
-	Y20 <- ylist$X2
-	
-	# Dissimilarity matrices for in-sample +out-of-sample
-	D10A <- as.matrix(dist(rbind(X1, Y1)))
-	
-	D20 <- as.matrix(dist(rbind(X2, Y20))) * s
-	D2A <- as.matrix(dist(rbind(X2, Y2A))) * s
-	D1<-as.matrix(D1)
-	D2<-as.matrix(D2)
-	pom.config<-c()
-	cca.config<-c()
-	if (verbose) print(D2[,1:3])
-	if (verbose) print("s")
-	if (verbose) print(s)
-	
-	D2<-D2*s
+	dissim.list <- generate.dissim(p = p,  d = d, alpha = alpha,
+			model = model, old.gauss.model.param = old.gauss.model.param,
+			r = r, n = n, m = m, mc = mc, size = size, q = q, c.val = c.val, 
+			verbose = verbose, pre.scaling = pre.scaling)
 	
 	if (verbose) print("PoM and CCA embedding\n")	
-	if (verbose) print(D1[1:10,1:3])
-	if (verbose) print(D2[1:10,1:3])
 	
 	
 	pom.config <-NULL
@@ -170,7 +92,8 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 		
 		
 		
-		PoM.teststats<-run.pom(D1, D2, D10A,D20,D2A,
+		PoM.teststats <- with(dissim.list,
+				run.pom(D1, D2, D10A,D20,D2A,
 				
 				p,q,d,c.val,
 				n,m,
@@ -178,6 +101,8 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 				model,oos,proc.dilation,
 				size,
 				verbose)
+				)
+
 		
 		
 		pom.config<-PoM.teststats$pom.config
@@ -187,7 +112,8 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 		
 		
 		if (verbose) print("PoM test statistic complete\n")
-		CCA.teststats<-run.cca(D1, D2, D10A,D20,D2A,
+		CCA.teststats <- with(dissim.list,
+				run.cca(D1, D2, D10A,D20,D2A,
 				p,q,d,c.val,
 				pprime1,pprime2,
 				
@@ -196,17 +122,20 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 				model,oos,
 				size,
 				verbose)		
+)
 		if (verbose) print("CCA test statistic complete\n")
 		if (cca.reg){
-			regCCA.teststats<-run.reg.cca(D1, D2, D10A,D20,D2A,
+			regCCA.teststats <- with(dissim.list,
+					run.reg.cca(D1, D2, D10A,D20,D2A,
 					p,q,d,c.val,
 					pprime1,pprime2,
-					d.super,
+					d.super=floor((d /4 + (p+q*as.numeric(c.val>0)*3/4))),
 					n,m,
 					
 					model,oos,
 					size,
 					verbose)		
+					)
 			
 		}
 	}
@@ -217,20 +146,15 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	
 	
 	
-	D.oos.1<-dist(Y1)
-	D.oos.2.null <- dist(Y20)
-	D.oos.2.alt <- dist(Y2A)
-	
-	ideal.omnibus.0  <- as.matrix(dist(rbind(X1,X2,Y1,Y20)))
-	ideal.omnibus.A  <- as.matrix(dist(rbind(X1,X2,Y1,Y2A)))
 	
 	
-	JOFC.results <-run.jofc(D1, D2, D10A,D20,D2A,
+	JOFC.results <- with(dissim.list,
+			run.jofc(D1, D2, D10A,D20,D2A,
 			D.oos.1,
 			D.oos.2.null ,
 			D.oos.2.alt ,					
-			ideal.omnibus.0  ,
-			ideal.omnibus.A ,
+			L.in.oos.0  ,
+			L.in.oos.A ,
 			
 			n,m,
 			d,
@@ -239,6 +163,7 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 			w.vals=w.vals,
 			size,
 			verbose)
+	)
 	
 	T0<- JOFC.results$T0
 	TA<- JOFC.results$TA
@@ -278,61 +203,18 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	# compute the contingency table using those results
 	if (power.comparison.test){
 		## n pairs of matched points
-		if (model=="gaussian"){
-			xlist <- matched_rnorm(n, p, q, c.val, r, alpha=alpha.mc[1:n, ],sigma.alpha=sigma,
-					old.gauss.model.param=old.gauss.model.param, sigma.beta=sigma.mc)
-		} else{
-			xlist <- matched_rdirichlet(n, p, r, q, c.val, alpha.mc[1:n, ])
-		}
-		X1 <- xlist$X1
-		X2 <- xlist$X2
-		D1 <- dist(X1)
-		D2 <- dist(X2)
+	    dissim.list.2<- generate.dissim(p = p, w.max.index = 2, d = d, alpha = alpha,
+				model = model, old.gauss.model.param = old.gauss.model.param,
+				r = r, n = n, m = m, mc = mc, size = size, q = q, c.val = c.val, 
+				verbose = verbose, pre.scaling = pre.scaling)
 		
-		if (verbose) print("random matched pairs generated\n")
-		if (pre.scaling) {
-			s <- lm(as.vector(D1) ~ as.vector(D2) + 0)$coefficients
-		} else {
-			s <- 1
-		}
-		
-		if (model=="gaussian"){
-			## test observations -- m pairs of matched and m pairs of unmatched
-			ylist <- matched_rnorm(m, p, q, c.val, r, alpha=alpha.mc[(n+1):(n+m), ],sigma.alpha=sigma,
-					old.gauss.model.param=old.gauss.model.param,sigma.beta=sigma.mc)
-			Y2A <- matched_rnorm(m, p, q, c.val, r, alpha=alpha.mc[(n+m+1):(n+m+m), ],sigma.alpha=sigma,
-					old.gauss.model.param=old.gauss.model.param,sigma.beta=sigma.mc)$X2
-		} else{
-			ylist <- matched_rdirichlet(m, p, r, q, c.val, alpha.mc[(n+1):(n+m), ])
-			Y2A <- matched_rdirichlet(m, p, r, q, c.val, alpha.mc[(n+m+1):(n+m+m), ])$X2
-		}
-		Y1 <- ylist$X1
-		Y20 <- ylist$X2
-		
-		
-		D10A <- as.matrix(dist(rbind(X1, Y1)))
-		
-		D20 <- as.matrix(dist(rbind(X2, Y20))) * s
-		D2A <- as.matrix(dist(rbind(X2, Y2A))) * s
-		D1<-as.matrix(D1)
-		D2<-as.matrix(D2)
-		
-		D2<-D2*s
-		
-		
-		D.oos.1<-dist(Y1)
-		D.oos.2.null <- dist(Y20)
-		D.oos.2.alt <- dist(Y2A)
-		ideal.omnibus.0  <- as.matrix(dist(rbind(X1,X2,Y1,Y20)))
-		ideal.omnibus.A  <- as.matrix(dist(rbind(X1,X2,Y1,Y2A)))
-		
-		JOFC.results <-run.jofc(D1, D2, D10A,D20,D2A,
+		JOFC.results <-with(dissim.list.2,run.jofc(D1, D2, D10A,D20,D2A,
 				D.oos.1,
 				D.oos.2.null ,
 				D.oos.2.alt ,
 				
-				ideal.omnibus.0  ,
-				ideal.omnibus.A ,
+				L.in.oos.0 ,
+				L.in.oos.A ,
 				
 				n,m,
 				d,c.val,
@@ -340,6 +222,7 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 				compare.pom.cca =TRUE,
 				w.vals=c(rival.w,def.w),
 				verbose)
+			)
 		
 		
 		T0.best.w <- JOFC.results$T0
@@ -377,16 +260,190 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	
 	
 	
+	
 	print("end run.mc.replicate")
 	list(power.mc=power.mc,
-			power.cmp=list(cca = CCA.teststats$power,pom = PoM.teststats$power,cca.reg = regCCA.teststats$power),
+			power.cmp=list(cca = CCA.teststats$power,pom = PoM.teststats$power,regCCA = regCCA.teststats$power),
 			cont.tables=cont.table,
 			config.dist= config.mismatch, min.stress=c(min.stress.for.w.val,pom.stress),means=means,
 			FidComm.Terms=FidComm.Terms,	FidComm.Sum.Terms = FidComm.Sum.Terms,
 			F.to.C.ratio = F.to.C.ratio, wtF.to.C.ratio=wtF.to.C.ratio,
 			F.bar.to.C.bar.ratio= F.bar.to.C.bar.ratio,
-			optim.power=optim.power,best.w =rival.w
+			optim.power=dissim.list$optim.power,best.w =rival.w
 	)
+	
+}
+
+run.bootstrapped.JOFC<-function(model,p, r, q, c.val,
+		d           = p-1,
+		pprime1     = ifelse(model=="gaussian",p+q,p+q+2),   # cca arguments , signal+noise dimension
+		pprime2     = ifelse(model=="gaussian",p+q,p+q+2),   # cca arguments, signal+noise dimension
+		Wchoice     = "avg", #How to impute L
+		pre.scaling = TRUE,  #Make the measurement spaces have the same scale
+		oos         = TRUE,  #embed test observations by Out-of-sampling  ?
+		alpha       = NULL,  
+		n = 100, m = 100,    #Number of training and test observations
+		
+		old.gauss.model.param=FALSE,
+		separability.entries.w,  
+		compare.pom.cca=TRUE,  # Run PoM and CCA to compare with JOFC?
+		oos.use.imputed,
+		level.mcnemar=0.01,  #At what alpha, should unweighted(w=0.5) and optimal w^* be compared
+		def.w=0.5,           #The null hypothesis is that power(def.w) >= power(rival.w) (by default ,def.w is the w for the unweighted case which equals 0.5)
+		rival.w=NULL,        
+		proc.dilation=FALSE, #when investigating convergence of JOFC to PoM, should Procrustes analysis of configurations include the dilation component?
+		assume.matched.for.oos, 
+		w.vals,				  #w values to use for JOFC
+		wt.equalize,		
+		verbose=FALSE) {
+	
+	w.max.index <- length(w.vals)	
+	size <- seq(0, 1, 0.01)
+	len <- length(size)
+	
+	power.w.star <- 0
+	
+	
+	power.mc= array(0,dim=c(w.max.index,len))  #power values for JOFC in this MC replicate
+	
+	
+	T0.best.w <- matrix(0,2,m)    #Test statistics for JOFC (comparison of w=0.5 with optimal w*
+	TA.best.w <- matrix(0,2,m)
+	
+	cont.table  <- matrix(0,2,2)
+	
+	Fid.Err.Term.1 <- array(0,dim=c(w.max.index))
+	Fid.Err.Term.2 <- array(0,dim=c(w.max.index))
+	Comm.Err.Term <- array(0,dim=c(w.max.index))
+	
+	dissim.list <- generate.dissim(p = p, w.max.index = w.max.index,
+			d = d, alpha = alpha, model = model,
+			old.gauss.model.param = old.gauss.model.param, 
+			r = r, n = n, m = m, mc = mc, size = size, q = q, c.val = c.val, 
+			verbose = verbose, pre.scaling = pre.scaling)
+	
+	
+	bootstrap.parts<- resample.for.param.estim(dissim.list)
+		
+	JOFC.results <- with( bootstrap.parts$dissim.list.param.est, 
+			
+			run.jofc(D1, D2, D10A,D20,D2A,
+					D.oos.1,
+					D.oos.2.null ,
+					D.oos.2.alt ,					
+					L.in.oos.0  ,
+					L.in.oos.A ,
+					
+					n,m,
+					d,
+					model,oos,Wchoice,separability.entries.w,wt.equalize,
+					assume.matched.for.oos,oos.use.imputed,
+					pom.config=pom.config,
+					w.vals=w.vals,
+					size,
+					verbose) 
+	)
+	
+	best.w.est <- find.best.w.for.power(JOFC.results)
+	
+	
+	JOFC.results.test <- with( bootstrap.parts$dissim.list.test, 
+			
+			run.jofc(D1, D2, D10A,D20,D2A,
+					D.oos.1,
+					D.oos.2.null ,
+					D.oos.2.alt ,					
+					L.in.oos.0  ,
+					L.in.oos.A ,
+					
+					n,m,
+					d,
+					model,oos,Wchoice,separability.entries.w,wt.equalize,
+					assume.matched.for.oos,oos.use.imputed,
+					pom.config=pom.config,
+					w.vals= best.w.est,  #Use estimate from bootstrapping
+					size,
+					verbose) 
+	)
+	
+	
+	T0<- JOFC.results.test$T0
+	TA<- JOFC.results.test$TA
+	
+	
+	
+	power.mc[l, ] <- get_power(T0, TA, size)
+	list(power.mc=power.mc, 	optim.power=dissim.list$optim.power,best.w =rival.w )
+	
+}
+
+
+resample.for.param.estim <- function(dissim.list) {
+	n <- nrow(D1)
+	total_n <- nrow(D10A)
+	m <- total_n - n
+	sample.for.param.est<-sample(1:n, size=floor(n/3))
+	sample.for.param.est.insample <-sample (sample.for.param.est,size=floor(2*n/9))
+	sample.log <- rep(F,length(sample.for.param.est))
+	sample.log[sample.for.param.est.insample]<- T
+	oos.sample.0 <- which(!sample.log)
+	shuff.sample <- sample(which(!sample.log),sum(!sample.log))
+	sample.alt <- c(sample.for.param.est.insample,shuff.sample)
+	
+	L.in.oos.0.param.est <- (D1[sample.for.param.est.insample,oos.sample.0]+
+				D2[sample.for.param.est.insample,oos.sample.0])/2 
+	L.in.oos.A.param.est  <- (D1[sample.for.param.est.insample,oos.sample.A]+
+				D2[sample.for.param.est.insample,oos.sample.A])/2 
+	data.for.param.est  <- list(D1=D1[sample.for.param.est.insample,sample.for.param.est.insample],
+			D2= D2 [sample.for.param.est.insample,sample.for.param.est.insample] ,
+			D10A= D1[sample.for.param.est,sample.for.param.est] ,
+			D20 = D2[sample.for.param.est,sample.for.param.est],
+			D2A = D2[sample.alt,sample.alt],
+			D.oos.1= D1[oos.sample.0,oos.sample.0] ,
+			D.oos.2.null = D2[oos.sample.0,oos.sample.0],
+			D.oos.2.alt=  D2[shuff.sample,shuff.sample],
+			L.in.oos.0 = L.in.oos.0.param.est,
+			L.in.oos.A = L.in.oos.A.param.est
+	)
+	
+	data.for.test  <- list(D1=D1[-sample.for.param.est,-sample.for.param.est],
+			D2= D2[-sample.for.param.est,-sample.for.param.est] ,
+			D10A= D10A[-sample.for.param.est,-sample.for.param.est] ,
+			D20 = D20[-sample.for.param.est,-sample.for.param.est],
+			D2A = D2A[-sample.for.param.est,-sample.for.param.est],
+			D.oos.1= D.oos.1 ,	D.oos.2.null = D.oos.2.null,
+			D.oos.2.alt=  D.oos.2.alt,
+			L.in.oos.0 = L.in.oos.0, L.in.oos.A = L.in.oos.A
+	)
+	
+	
+	return(list(dissim.list.param.est=data.for.param.est,
+					dissim.list.test=data.for.test)) 
+	
+	
+}
+
+
+
+
+find.best.w.for.power <- function(JOFC.res,w.vals.vec) {
+	#w
+	w.val.len <- length(w.vals.vec)  
+	for (i in 1:w.val.len){
+		beta.w<-sim.res$power[i,,2]
+		avg.power.w[i]<-mean(beta.w)		
+	}
+	max.w <- which.max((JOFC.res$avg.power.w))
+	best.w.value <- w.vals.vec [max.w]
+	if (verbose) print("Estimate of wstar for average power curve")
+	if (verbose)  print(best.w.value)
+	#sink("debug-wstar.txt")
+	#print(sim.res$power[,,6])
+	
+	#Which w value was the best w for the highest number of mc replicates
+	#Note that multiple w.values might have the best power
+	sim.res$wstar.idx.estim.mc<- apply(JOFC.res$power[,,6],2,function(x) which(x==max(x)))
+	
 	
 }
 
@@ -632,8 +689,8 @@ run.jofc <- function(D1, D2, D10A,D20,D2A,
 		D.oos.2.null ,
 		D.oos.2.alt ,
 		
-		ideal.omnibus.0  ,
-		ideal.omnibus.A ,
+		L.in.oos.0  ,
+		L.in.oos.A ,
 		
 		n,m,
 		d,
@@ -643,6 +700,7 @@ run.jofc <- function(D1, D2, D10A,D20,D2A,
 		w.vals,
 		size,
 		verbose=FALSE)   {
+	
 	w.max.index <- length(w.vals)
 	T0<-matrix(0,w.max.index,m)
 	TA<-matrix(0,w.max.index,m)
@@ -783,8 +841,8 @@ run.jofc <- function(D1, D2, D10A,D20,D2A,
 			
 			
 			
-			omnibus.oos.D.0 <- omnibusM(M,M.oos.0,ideal.omnibus.0[1:(2*n),(2*n)+(1:(2*m))])
-			omnibus.oos.D.A <- omnibusM(M,M.oos.A, ideal.omnibus.A[1:(2*n),(2*n)+(1:(2*m))])
+			omnibus.oos.D.0 <- omnibusM(M,M.oos.0,L.in.oos.0 )
+			omnibus.oos.D.A <- omnibusM(M,M.oos.A, L.in.oos.A)
 			oos.Weight.mat[is.na(omnibus.oos.D.0)]<-0
 			omnibus.oos.D.0[is.na(omnibus.oos.D.0)]<-1
 			omnibus.oos.D.A[is.na(omnibus.oos.D.A)]<-1
@@ -817,25 +875,129 @@ run.jofc <- function(D1, D2, D10A,D20,D2A,
 			Y2At<-Y.At[m+(1:m),]
 			
 			
-			
-			
 			T0[l,] <- rowSums((Y1t - Y2t)^2)
 			TA[l,] <- rowSums((Y1t.A - Y2At)^2)
 		}
-		
-		
-		
-		
 	}
-	
 	
 	return(list(T0=T0,TA=TA,
 					Fid.Err.Term.1=Fid.Err.Term.1 ,		Fid.Err.Term.2=Fid.Err.Term.2,  Comm.Err.Term=Comm.Err.Term  ,  	  		
 					Fid.Err.Sum.Term.1 = Fid.Err.Sum.Term.1 ,		Fid.Err.Sum.Term.2 = Fid.Err.Sum.Term.2 ,		Comm.Err.Sum.Term  =Comm.Err.Sum.Term  , 
 					FC.ratio = FC.ratio ,		FC.ratio.2 =FC.ratio.2 ,		FC.ratio.3 = FC.ratio.3
-			))
+			)
+	)
 	
 }
+		
+		
+		
+generate.dissim <- function(p,  d, alpha, model, old.gauss.model.param, r, n, m, mc, size, q, c.val, verbose, pre.scaling) {
+	sigma <- matrix(0,p,p)
+		
+	
+	if (is.null(alpha)) {
+		if (model=="gaussian"){
+			sigma<- diag(p)
+			if (old.gauss.model.param) sigma <-Posdef(p,r)
+			alpha.mc <- mvrnorm(n+(2*m), rep(0,p),sigma)
+		} else if (model=="dirichlet"){
+			alpha.mc <- rdirichlet(n+2*m, rep(1,p+1))
+		} else stop("unknown model")
+		
+		
+	} else {
+		alpha.mc <- alpha[[mc]]
+	}
+	## optimal power
+	optim.power<- c()
+	if (model=="gaussian"){
+		for  (aleph in size){
+			crit.val.1<-qgamma(aleph,(p)/2,scale=2/r,lower.tail=FALSE)
+			crit.val.2<-crit.val.1
+			type.2.err<-pgamma(crit.val.2,shape=(p)/2,scale=2*(1+1/r))
+			beta<- 1-type.2.err
+			optim.power<- c(optim.power,beta)
+		}
+	}
+	
+	
+	## n pairs of matched points
+	if (model=="gaussian"){
+		xlist <- matched_rnorm(n, p, q, c.val, r, alpha=alpha.mc[1:n, ],
+				sigma.alpha=sigma,old.gauss.model.param=old.gauss.model.param)
+	} else{
+		xlist <- matched_rdirichlet(n, p, r, q, c.val, alpha.mc[1:n, ])
+	}
+	X1 <- xlist$X1
+	X2 <- xlist$X2
+	if (model=="gaussian")
+		sigma.mc<-xlist$sigma.beta
+	
+	D1 <- dist(X1)
+	D2 <- dist(X2)
+	
+	if (verbose) print("random matched pairs generated\n")
+	
+	#prescaling
+	if (pre.scaling) {
+		s <- lm(as.vector(D1) ~ as.vector(D2) + 0)$coefficients
+	} else {
+		s <- 1
+	}
+	
+	#m pairs of unmatched points
+	if (model=="gaussian"){
+		## test observations -- m pairs of matched and m pairs of unmatched
+		ylist <- matched_rnorm(m, p, q, c.val, r, alpha=alpha.mc[(n+1):(n+m), ],
+				sigma.alpha=sigma,old.gauss.model.param=old.gauss.model.param, sigma.beta=sigma.mc)
+		Y2A <- matched_rnorm(m, p, q, c.val, r, alpha=alpha.mc[(n+m+1):(n+m+m), ],
+				sigma.alpha=sigma,old.gauss.model.param=old.gauss.model.param, sigma.beta=sigma.mc)$X2
+	} else{
+		ylist <- matched_rdirichlet(m, p, r, q, c.val, alpha.mc[(n+1):(n+m), ])
+		Y2A <- matched_rdirichlet(m, p, r, q, c.val, alpha.mc[(n+m+1):(n+m+m), ])$X2
+}
+	Y1 <- ylist$X1
+	Y20 <- ylist$X2
+	
+	# Dissimilarity matrices for in-sample +out-of-sample
+	D10A <- as.matrix(dist(rbind(X1, Y1)))
+	
+	D20 <- as.matrix(dist(rbind(X2, Y20))) * s
+	D2A <- as.matrix(dist(rbind(X2, Y2A))) * s
+	D1<-as.matrix(D1)
+	D2<-as.matrix(D2)
+	pom.config<-c()
+	cca.config<-c()
+	if (verbose) print(D2[,1:3])
+	if (verbose) print("s")
+	if (verbose) print(s)
+	
+	D2<-D2*s
+	
+	
+	D.oos.1<-dist(Y1)
+	D.oos.2.null <- dist(Y20)
+	D.oos.2.alt <- dist(Y2A)
+	
+	ideal.omnibus.0  <- as.matrix(dist(rbind(X1,X2,Y1,Y20)))
+	ideal.omnibus.A  <- as.matrix(dist(rbind(X1,X2,Y1,Y2A)))
+	
+	L.in.oos.0 <- ideal.omnibus.0[1:(2*n),(2*n)+(1:(2*m))]
+	L.in.oos.A <- ideal.omnibus.A[1:(2*n),(2*n)+(1:(2*m))]
+	
+	
+	return(list(D1= D1,D2= D2,D10A= D10A,D20 = D20,D2A=D2A,
+					D.oos.1= D.oos.1, D.oos.2.null= D.oos.2.null,D.oos.2.alt= D.oos.2.alt,
+					L.in.oos.0 = L.in.oos.0, L.in.oos.A = L.in.oos.A,
+					optim.power=optim.power))
+	
+}
+
+
+
+
+
+
 
 
 
@@ -1374,54 +1536,6 @@ plot.graph.with.CI<-function(plot.roc.points,plot.title,plot.col,conf.int=TRUE,a
 	}
 	
 	par(lty=1)		
-}
-
-
-
-plot.graph.with.CI.error<-function(plot.roc.points,plot.title,plot.col,
-                                   conf.int=TRUE,add=FALSE,fp.points=seq(0,1,0.01),
-                                   customx.labels=NULL,customy.labels=NULL,
-                                   ispowercurve=TRUE,...){
-  
-  standardx.axis <- FALSE
-  standardy.axis <- FALSE
-  if (is.null(customx.labels))
-    standardx.axis<-TRUE
-  if (is.null(customy.labels))
-    standardy.axis<-TRUE
-  
-  num.sims<-dim(plot.roc.points)[1]
-  
-  y.points<-colMeans(plot.roc.points,na.rm=TRUE)
-  var.y.points <-rep (0,length(fp.points))
-  var.y.points <- colVars(plot.roc.points,na.rm=TRUE)
-  std.y.points <- 2*sqrt(var.y.points)
-  ucl <- y.points+std.y.points/sqrt(num.sims)
-  lcl <- y.points-std.y.points/sqrt(num.sims)
-  
-  if (add){
-    lines(x=fp.points,y= y.points,main=plot.title,
-          col=plot.col,xaxt=ifelse(standardx.axis,"s","n"),
-          yaxt=ifelse(standardy.axis,"s","n"), lwd=2.5,xlab="",ylab="",...)
-    
-  }
-  else{
-    plot(x=fp.points,y= y.points,main=plot.title,xaxt=ifelse(standardx.axis,"s","n"),
-         yaxt=ifelse(standardy.axis,"s","n"), col=plot.col,type='l',lwd=2.5,...)
-  }
-  
-  if (!standardx.axis)
-    axis(1, at=fp.points,labels=customx.labels)
-  if (!standardy.axis)		
-    axis(2, at=y.points,labels=customy.labels)
-  
-  
-  
-  if (conf.int){
-    arrows(fp.points,ucl,fp.points,lcl,length=.05,angle=90,code=3, lty=3,col=plot.col)
-  }
-  
- 		
 }
 
 
