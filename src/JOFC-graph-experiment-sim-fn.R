@@ -165,14 +165,14 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
   num.cores<-parallel::detectCores()
   iter_per_core <- ceiling(num_iter/num.cores)
   require(foreach)
-  
+
 
   if (.Platform$OS.type != "windows" && require("multicore")) {
   require(doMC)
     registerDoMC()
   } else if (FALSE &&                     # doSMP is buggy
            require("doSMP")) {
-  workers <- startWorkers(num.cores) # My computer has 4 cores
+	workers <- startWorkers(num.cores) # My computer has 4 cores
        on.exit(stopWorkers(w), add = TRUE)
     registerDoSMP(w)
 } else if (require("doSNOW")) {
@@ -186,7 +186,7 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
     
  
   corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
-    setwd('~/projects/DataFusion-graphmatch/')
+   # setwd('~/projects/DataFusion-graphmatch/')
     require(optmatch)
     require(igraph)
     require(MASS)
@@ -209,6 +209,7 @@ worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_me
 }  
 
 worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default",symmetrize=TRUE) {
+
 	load("./data/celegansGraph.Rd")
 	
 	
@@ -221,7 +222,7 @@ worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss
 	Ac <- Ac[!disc_v,!disc_v]
 	Ag <- Ag[!disc_v,!disc_v]
 	graph.is.directed <- TRUE
-	if (weighted.graph){
+       if (weighted.graph){
 		
 		scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
 		Ac_graph <- Ac
@@ -235,11 +236,15 @@ worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss
 			Ag_graph <- (Ag_graph+t(Ag_graph))/2
 		}
 	} else{
+              Ac_graph <- Ac
+              Ag_graph <- Ag
+	
 		if (symmetrize){
 			graph.is.directed <- FALSE
 			Ac_graph <- (Ac+t(Ac))/2
 			Ag_graph <- (Ag+t(Ag))/2
 		}
+             
 		Ac_graph<- (Ac_graph>0)
 		Ag_graph<- (Ag_graph>0)
 	}
@@ -269,7 +274,7 @@ worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss
 
 	
 	corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
-		setwd('~/projects/DataFusion-graphmatch/')
+	#	setwd('~/projects/DataFusion-graphmatch/')
 		require(optmatch)
 		require(igraph)
 		require(MASS)
@@ -291,7 +296,7 @@ worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss
 		corr.matches
 	}
 	
-
+	
 	print (str(corr_match_list))
 	
 	
