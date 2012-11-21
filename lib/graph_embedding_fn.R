@@ -1212,7 +1212,7 @@ graph2dissimilarity <- function (G,Gp,
 				r_ij= sum((W[i,]* (W[i,]>0 &  W[j,]==0)))+ sum((W[j,]* (W[i,]==0 &  W[j,]>0)))-W[i,j]-W[j,i]
 				a_ij <- sum((W[i,]+W[j,])*((W[i,]>0)&(W[j,]>0)))+W[i,j]+W[j,i]
 				#t <- ifelse(W[i,j]==0,1,0)
-				D.out[i,j] <- (r_ij+2*(W[i,j]==0))/(r_ij+a_ij+2)
+				D.out[i,j] <- (r_ij+(W[i,j]==0)+(W[j,i]==0))/(r_ij+a_ij+2)
 			}
 			
 		}
