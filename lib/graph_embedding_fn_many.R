@@ -98,9 +98,8 @@ graph2dissimilarity.many <- function (G,Gp,corr.list,
 		graph.mode,
 		vert_diss_measure,
 		T.param,
-		weighted.g
 
-) {
+                                      weighted.g) {
 	n.1<-nrow(G)
 	n.2<-nrow(Gp)
 	in.samp.ind.1 <- which(in.sample.ind.1)
