@@ -1,15 +1,16 @@
 
-run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_dice_weighted',
+run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_dice_weighted',
                               graph.is.weighted=FALSE,graph.is.directed=FALSE, preselected.seeds=NULL,
-                              preselected.test= NULL,
+                              preselected.test= NULL,w.vals,
                               ...){
   
   
   matched.cost<-0.01
   N<-nrow(G)
-  corr.matches =matrix(0,length(n_vals),num_iter)
+  corr.matches =array(0,dim=c(length(n_vals),num_iter,length(w.vals)))
   G.1<-G
   G.2<-Gp
+  w.max.index<-length(w.vals)
   
   
   #If list of preselected.seeds is given (is not NULL)
@@ -46,7 +47,7 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_dic
       jofc.result<- 
         #try(
         JOFC.graph.custom.dist(G.1,G.2,in.sample.ind=insample_logic_vec, 
-                               d.dim=embed.dim, w.vals.vec=0.8, graph.is.directed= graph.is.directed, 
+                               d.dim=embed.dim, w.vals.vec=w.vals, graph.is.directed= graph.is.directed, 
                                vert_diss_measure=diss_measure,  T.param  =  2, ...)
       #)
       
@@ -54,50 +55,56 @@ run.experiment.JOFC<-function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_dic
         print('Skipping iteration')
         corr.matches[n_v_i,it] <- NA
         next}
-      
-      jofc.res.1<-jofc.result[[1]]
+     for (l in 1:w.max.index){ 
+      jofc.res.l<-jofc.result[[l]]
       
       #M.result.1<-try(solveMarriage(jofc.res.1))
       test.m <- sum(!insample_logic_vec)/2
       
       
-      rownames(jofc.res.1) <- 1:test.m
-      colnames(jofc.res.1) <- 1:test.m
-      M.result.1<- solve_LSAP(jofc.res.1)
+      rownames(jofc.res.l) <- 1:test.m
+      colnames(jofc.res.l) <- 1:test.m
+      M.result.l<- solve_LSAP(jofc.res.l)
       num_matched_v<-test.m
       if (!is.null(preselected.test)){
-        corr_matched_v <-as.matrix(M.result.1)==1:test.m
+        corr_matched_v <-as.matrix(M.result.l)==1:test.m
         preselected.log<-rep(F,N)
         preselected.log[preselected.test]<-T
         preselected.new.index <- which(preselected.log[-preselected.seeds])
         
-        NumofTruePairing.1 <- sum(corr_matched_v[preselected.new.index])
+        NumofTruePairing.l <- sum(corr_matched_v[preselected.new.index])
         num_matched_v <- length(preselected.test)
       }
       else{
       
       
-      NumofTruePairing.1 <- sum(as.matrix(M.result.1)==1:test.m)
+      NumofTruePairing.l <- sum(as.matrix(M.result.l)==1:test.m)
       }
       
-      print(paste(NumofTruePairing.1," out of ", num_matched_v,sep="",collapse=""))
+      print(paste(NumofTruePairing.l," out of ", num_matched_v,sep="",collapse=""))
       
       end.time <- proc.time()
       
       print(paste("run took ", end.time[2]-init.time[2] ," s ",sep="",collapse =""))
       print(paste("(usertime )run took ", end.time[1]-init.time[1] ," s ",sep="",collapse =""))
       
-      if (inherits(M.result.1,"try-error"))    {  
+      if (inherits(M.result.l,"try-error"))    {  
         print('Skipping iteration')
         next}
       
       #NumofTruePairing.1<-present(M.result.1)
-      corr.matches[n_v_i,it] = NumofTruePairing.1
+      corr.matches[n_v_i,it,l] = NumofTruePairing.l
+     }
     }
   }
-  #   save( list=c("corr.matches"),
-  #         file=paste("./logs/JOFC_graph",Sys.time(),floor(runif(n=1,max=100))), 
-  #         ascii=TRUE)
+  
+  dimnames(corr.matches)
+  print("corr.matches")
+  print(head(corr.matches))
+  print(str(corr.matches))
+    # save( list=c("corr.matches"),
+    #       file=paste("./logs/JOFC_graph",format(Sys.time(), "%b_%d_%Y"),floor(runif(n=1,max=100)),".RData",collapse=""), 
+    #      ascii=TRUE)
   return(corr.matches)
 }
 
@@ -178,223 +185,126 @@ wiki_exp <- function(num_iter,n_vals,embed.dim=13) {
   
 }	
 
-worm_exp_par <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="C_dice_weighted",
-                         preselected.seeds=NULL,preselected.test=NULL) {
-  
-  load("./data/celegansGraph.Rd")
-  if (weighted.graph){
-    scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
-    Ac_graph <- Ac
-    Ag_graph <- scale_f*Ag
-    
-    
-    #symmetrize
-    Ac_graph <- (Ac_graph+t(Ac_graph))/2
-    Ag_graph <- (Ag_graph+t(Ag_graph))/2
-  } else{
-    
-    Ac_graph<- Ac>0
-    Ag_graph<- Ag>0
-  }
-  num.cores<-parallel::detectCores()
-  iter_per_core <- ceiling(num_iter/num.cores)
-  require(foreach)
-  
-  
-  if (.Platform$OS.type != "windows" && require("multicore")) {
-    require(doMC)
-    registerDoMC()
-  } else if (FALSE &&                     # doSMP is buggy
-    require("doSMP")) {
-    workers <- startWorkers(num.cores) # My computer has 4 cores
-    on.exit(stopWorkers(w), add = TRUE)
-    registerDoSMP(w)
-  } else if (require("doSNOW")) {
-    cl <- snow::makeCluster(num.cores, type = "SOCK")
-    on.exit(snow::stopCluster(cl), add = TRUE)
-    registerDoSNOW(cl)
-  } else {
-    registerDoSEQ()
-  }  
-  
-  
-  
-  corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
-    # setwd('~/projects/DataFusion-graphmatch/')
-    require(optmatch)
-    require(igraph)
-    require(MASS)
-    require(MCMCpack)
-    source("./lib/graph_embedding_fn.R")
-    source("./lib/simulation_math_util_fn.R")
-    source("./lib/smacofM.R")
-    source("./lib/oosIM.R")
-    source("./lib/diffusion_distance.R")
-    corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
-                                      embed.dim,diss_measure=diss_measure, graph.is.weighted=weighted.graph,
-                                      preselected.seeds=preselected.seeds,preselected.test=preselected.test)
-  }
-  
-  #corr.results.avg <- array(0, dim( corr_match_list[[1]]))
-  #for (corr.results in corr_match_list){
-  #   corr.results.avg <- corr.results.avg+corr.results
-  #}  
-  #corr.results.avg <- corr.results.avg/length( corr_match_list)
-  return (list(agg=corr_match_list ))
-}  
 
-worm_exp_par_sf <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
-                            diss_measure="C_dice_weighted",symmetrize=TRUE,
-                            preselected.seeds=NULL,preselected.test=NULL) {
-  
-  load("./data/celegansGraph.Rd")
-  
-  
-  sum_row_c = apply(Ac,1,sum)
-  sum_col_c = apply(Ac,2,sum)
-  sum_row_g = apply(Ag,1,sum)
-  sum_col_g = apply(Ag,2,sum)
-  
-  disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
-  Ac <- Ac[!disc_v,!disc_v]
-  Ag <- Ag[!disc_v,!disc_v]
-  graph.is.directed <- TRUE
-  if (weighted.graph){
-    
-    scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
-    Ac_graph <- Ac
-    Ag_graph <- scale_f*Ag
-    
-    
-    #symmetrize
-    if (symmetrize){
-      graph.is.directed <- FALSE
-      Ac_graph <- (Ac_graph+t(Ac_graph))/2
-      Ag_graph <- (Ag_graph+t(Ag_graph))/2
-    }
-  } else{
-    Ac_graph <- Ac
-    Ag_graph <- Ag
-    
-    if (symmetrize){
-      graph.is.directed <- FALSE
-      Ac_graph <- (Ac+t(Ac))/2
-      Ag_graph <- (Ag+t(Ag))/2
-    }
-    
-    Ac_graph<- (Ac_graph>0)
-    Ag_graph<- (Ag_graph>0)
-  }
-  num.cores<-parallel::detectCores()
-  iter_per_core <- ceiling(num_iter/num.cores)
-  
-  num.cores<-parallel::detectCores()
-  iter_per_core <- ceiling(num_iter/num.cores)
-  require(foreach)
-  
-  
-  if (.Platform$OS.type != "windows" && require("multicore")) {
-    require(doMC)
-    registerDoMC()
-  } else if (FALSE &&                     # doSMP is buggy
-    require("doSMP")) {
-    workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
-    on.exit(stopWorkers(w), add = TRUE)
-    registerDoSMP(w)
-  } else if (require("doSNOW")) {
-    cl <- snow::makeCluster(num.cores, type = "SOCK")
-    on.exit(snow::stopCluster(cl), add = TRUE)
-    registerDoSNOW(cl)
-  } else {
-    registerDoSEQ()
-  }  
-  
-  
-  corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
-    #	setwd('~/projects/DataFusion-graphmatch/')
-    require(optmatch)
-    require(igraph)
-    require(MASS)
-    require(MCMCpack)
-    require(clue)
-    source("./lib/graph_embedding_fn.R")
-    source("./lib/simulation_math_util_fn.R")
-    source("./lib/smacofM.R")
-    source("./lib/oosIM.R")
-    source("./lib/diffusion_distance.R")
-    #		
-    corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
-                                      embed.dim,diss_measure=diss_measure,
-                                      
-                                      graph.is.weighted=weighted.graph,
-                                      graph.is.directed= graph.is.directed,
-                                      preselected.seeds=preselected.seeds,
-                                      preselected.test =preselected.test
-    )
-    
-    corr.matches
-  }
-  
-  
-  print (str(corr_match_list))
-  
-  
-  return (corr_match_list )
+
+worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
+		diss_measure="C_dice_weighted",symmetrize=TRUE,
+		preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE) {
+	
+	load("./data/celegansGraph.Rd")
+	
+	
+	sum_row_c = apply(Ac,1,sum)
+	sum_col_c = apply(Ac,2,sum)
+	sum_row_g = apply(Ag,1,sum)
+	sum_col_g = apply(Ag,2,sum)
+	
+	disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
+	Ac <- Ac[!disc_v,!disc_v]
+	Ag <- Ag[!disc_v,!disc_v]
+	graph.is.directed <- TRUE
+	if (weighted.graph){
+		
+		scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
+		Ac_graph <- Ac
+		Ag_graph <- scale_f*Ag
+		
+		
+		#symmetrize
+		if (symmetrize){
+			graph.is.directed <- FALSE
+			Ac_graph <- (Ac_graph+t(Ac_graph))/2
+			Ag_graph <- (Ag_graph+t(Ag_graph))/2
+		}
+	} else{
+		Ac_graph <- Ac
+		Ag_graph <- Ag
+		
+		if (symmetrize){
+			graph.is.directed <- FALSE
+			Ac_graph <- (Ac+t(Ac))/2
+			Ag_graph <- (Ag+t(Ag))/2
+		}
+		
+		Ac_graph<- (Ac_graph>0)
+		Ag_graph<- (Ag_graph>0)
+	}
+	num.cores<-parallel::detectCores()
+	iter_per_core <- ceiling(num_iter/num.cores)
+	
+	num.cores<-parallel::detectCores()
+	iter_per_core <- ceiling(num_iter/num.cores)
+	require(foreach)
+	
+	if(seq){
+		registerDoSEQ()
+	} else if (.Platform$OS.type != "windows" && require("multicore")) {
+		require(doMC)
+		registerDoMC()
+	} else if (FALSE &&                     # doSMP is buggy
+			require("doSMP")) {
+		workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
+		on.exit(stopWorkers(w), add = TRUE)
+		registerDoSMP(w)
+	} else if (require("doSNOW")) {
+		cl <- snow::makeCluster(num.cores, type = "SOCK")
+		on.exit(snow::stopCluster(cl), add = TRUE)
+		registerDoSNOW(cl)
+	} else {
+		registerDoSEQ()
+	}  
+	
+	
+	corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
+		#	setwd('~/projects/DataFusion-graphmatch/')
+		require(optmatch)
+		require(igraph)
+		require(MASS)
+		require(MCMCpack)
+		require(clue)
+		source("./lib/graph_embedding_fn.R")
+		source("./lib/simulation_math_util_fn.R")
+		source("./lib/smacofM.R")
+		source("./lib/oosIM.R")
+		source("./lib/diffusion_distance.R")
+		#		
+		corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
+				embed.dim,diss_measure=diss_measure,
+				
+				graph.is.weighted=weighted.graph,
+				graph.is.directed= graph.is.directed,
+				preselected.seeds=preselected.seeds,
+				preselected.test =preselected.test,
+				w.vals =w.vals
+		)
+		
+		dimnames(corr.matches)[[1]]<-as.list(n_vals)
+		dimnames(corr.matches)[[2]]<-paste("iteration",1:iter_per_core)
+		dimnames(corr.matches)[[3]] <-as.list(w.vals)
+	}
+	
+	
+	print (str(corr_match_list))
+	
+	
+	return (corr_match_list )
 }
 
 
-worm_exp <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,diss_measure="default",
-                     symmetrize=TRUE,preselected.seeds=NULL , preselected.test=NULL) {
+
+
+
+
+
+
+
+worm_exp <- function(...) {
   
-  load("./data/celegansGraph.Rd")
-  sum_row_c = apply(Ac,1,sum)
-  sum_col_c = apply(Ac,2,sum)
-  sum_row_g = apply(Ag,1,sum)
-  sum_col_g = apply(Ag,2,sum)
-  
-  disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
-  Ac <- Ac[!disc_v,!disc_v]
-  Ag <- Ag[!disc_v,!disc_v]
-  graph.is.directed <- TRUE
-  if (weighted.graph){
-    
-    scale_f <- lm(as.vector(Ac) ~ as.vector(Ag) + 0)$coefficients
-    Ac_graph <- Ac
-    Ag_graph <- scale_f*Ag
-    
-    
-    
-    
-    #symmetrize
-    if (symmetrize){
-      graph.is.directed <- FALSE
-      Ac_graph <- (Ac_graph+t(Ac_graph))/2
-      Ag_graph <- (Ag_graph+t(Ag_graph))/2
-    }
-  } else{
-    
-    Ac_graph <- Ac
-    Ag_graph <- Ag
-    if (symmetrize){
-      graph.is.directed <- FALSE
-      Ac_graph <- (Ac+t(Ac))/2
-      Ag_graph <- (Ag+t(Ag))/2
-    }
-    Ac_graph<- (Ac_graph>0)
-    Ag_graph<- (Ag_graph>0)
-  }
-  
-  corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=num_iter,
-                                    embed.dim,diss_measure=diss_measure,
-                                    
-                                    graph.is.weighted=weighted.graph,
-                                    graph.is.directed=graph.is.directed ,
-                                    preselected.seeds=preselected.seeds,
-                                    preselected.test =preselected.test
-  )
-  
-  return (corr.matches)
+				 worm_exp_par_sf_w(...,seq=TRUE)
 }
+
+
+
 
 
 
