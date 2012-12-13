@@ -1,7 +1,7 @@
 
 run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_dice_weighted',
                               graph.is.weighted=FALSE,graph.is.directed=FALSE, preselected.seeds=NULL,
-                              preselected.test= NULL,w.vals,
+                              preselected.test= NULL,w.vals,num_v_to_embed_at_a_time = 1,    
                               ...){
   
   
@@ -11,7 +11,7 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
   G.1<-G
   G.2<-Gp
   w.max.index<-length(w.vals)
-  
+  corr.match.list<- list()
   
   #If list of preselected.seeds is given (is not NULL)
   # number of seeds is equal to the length of preselected.seeds
@@ -43,12 +43,13 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
       
       insample_logic_vec <- c(insample_logic_vec,insample_logic_vec)
       
-      num_v_to_embed_at_a_time = 1
+  
       jofc.result<- 
         #try(
         JOFC.graph.custom.dist(G.1,G.2,in.sample.ind=insample_logic_vec, 
                                d.dim=embed.dim, w.vals.vec=w.vals, graph.is.directed= graph.is.directed, 
-                               vert_diss_measure=diss_measure,  T.param  =  2, ...)
+                               vert_diss_measure=diss_measure,  T.param  =  2,num_v_to_embed_at_a_time = num_v_to_embed_at_a_time,
+							   ...)
       #)
       
       if (inherits(jofc.result,"try-error")) {
@@ -96,7 +97,13 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
       corr.matches[n_v_i,it,l] = NumofTruePairing.l
      }
     }
+	
+	#
+	
   }
+  
+  for (it  in 1:num_iter)
+  corr.match.list <-c(corr.match.list,list( drop(corr.matches[,it,])))
   
   dimnames(corr.matches)
   print("corr.matches")
@@ -104,8 +111,10 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
   print(str(corr.matches))
     # save( list=c("corr.matches"),
     #       file=paste("./logs/JOFC_graph",format(Sys.time(), "%b_%d_%Y"),floor(runif(n=1,max=100)),".RData",collapse=""), 
-    #      ascii=TRUE)
-  return(corr.matches)
+    #      ascii=TRUE) 
+
+  return(corr.match.list)   
+  
 }
 
 bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure,it.per.G=1, 
@@ -255,7 +264,7 @@ worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 	}  
 	
 	
-	corr_match_list<- foreach(i=1:num.cores, .combine="cbind",.export="run.experiment.JOFC") %dopar% {
+	corr_match_list<- foreach(i=1:num.cores, .combine="c",.export="run.experiment.JOFC") %dopar% {
 		#	setwd('~/projects/DataFusion-graphmatch/')
 		require(optmatch)
 		require(igraph)
@@ -278,9 +287,10 @@ worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 				w.vals =w.vals
 		)
 		
-		dimnames(corr.matches)[[1]]<-as.list(n_vals)
-		dimnames(corr.matches)[[2]]<-paste("iteration",1:iter_per_core)
-		dimnames(corr.matches)[[3]] <-as.list(w.vals)
+		#dimnames(corr.matches)[[1]]<-as.list(n_vals)
+		#dimnames(corr.matches)[[2]]<-paste("iteration",1:iter_per_core)
+		#dimnames(corr.matches)[[3]] <-as.list(w.vals)
+		corr.matches
 	}
 	
 	

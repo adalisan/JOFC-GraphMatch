@@ -274,175 +274,264 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	
 }
 
+
 run.bootstrapped.JOFC<-function(model,p, r, q, c.val,
-		d           = p-1,
-		pprime1     = ifelse(model=="gaussian",p+q,p+q+2),   # cca arguments , signal+noise dimension
-		pprime2     = ifelse(model=="gaussian",p+q,p+q+2),   # cca arguments, signal+noise dimension
-		Wchoice     = "avg", #How to impute L
-		pre.scaling = TRUE,  #Make the measurement spaces have the same scale
-		oos         = TRUE,  #embed test observations by Out-of-sampling  ?
-		alpha       = NULL,  
-		n = 100, m = 100,    #Number of training and test observations
-		
-		old.gauss.model.param=FALSE,
-		separability.entries.w,  
-		compare.pom.cca=TRUE,  # Run PoM and CCA to compare with JOFC?
-		oos.use.imputed,
-		level.mcnemar=0.01,  #At what alpha, should unweighted(w=0.5) and optimal w^* be compared
-		def.w=0.5,           #The null hypothesis is that power(def.w) >= power(rival.w) (by default ,def.w is the w for the unweighted case which equals 0.5)
-		rival.w=NULL,        
-		proc.dilation=FALSE, #when investigating convergence of JOFC to PoM, should Procrustes analysis of configurations include the dilation component?
-		assume.matched.for.oos, 
-		w.vals,				  #w values to use for JOFC
-		wt.equalize,		
-		verbose=FALSE) {
-	
-	w.max.index <- length(w.vals)	
-	size <- seq(0, 1, 0.01)
-	len <- length(size)
-	
-	power.w.star <- 0
-	
-	
-	power.mc= array(0,dim=c(w.max.index,len))  #power values for JOFC in this MC replicate
-	
-	
-	T0.best.w <- matrix(0,2,m)    #Test statistics for JOFC (comparison of w=0.5 with optimal w*
-	TA.best.w <- matrix(0,2,m)
-	
-	cont.table  <- matrix(0,2,2)
-	
-	Fid.Err.Term.1 <- array(0,dim=c(w.max.index))
-	Fid.Err.Term.2 <- array(0,dim=c(w.max.index))
-	Comm.Err.Term <- array(0,dim=c(w.max.index))
-	
-	dissim.list <- generate.dissim(p = p, w.max.index = w.max.index,
-			d = d, alpha = alpha, model = model,
-			old.gauss.model.param = old.gauss.model.param, 
-			r = r, n = n, m = m, mc = mc, size = size, q = q, c.val = c.val, 
-			verbose = verbose, pre.scaling = pre.scaling)
-	
-	
-	bootstrap.parts<- resample.for.param.estim(dissim.list)
-		
-	JOFC.results <- with( bootstrap.parts$dissim.list.param.est, 
-			
-			run.jofc(D1, D2, D10A,D20,D2A,
-					D.oos.1,
-					D.oos.2.null ,
-					D.oos.2.alt ,					
-					L.in.oos.0  ,
-					L.in.oos.A ,
-					
-					n,m,
-					d,
-					model,oos,Wchoice,separability.entries.w,wt.equalize,
-					assume.matched.for.oos,oos.use.imputed,
-					pom.config=pom.config,
-					w.vals=w.vals,
-					size,
-					verbose) 
-	)
-	
-	best.w.est <- find.best.w.for.power(JOFC.results)
-	
-	
-	JOFC.results.test <- with( bootstrap.parts$dissim.list.test, 
-			
-			run.jofc(D1, D2, D10A,D20,D2A,
-					D.oos.1,
-					D.oos.2.null ,
-					D.oos.2.alt ,					
-					L.in.oos.0  ,
-					L.in.oos.A ,
-					
-					n,m,
-					d,
-					model,oos,Wchoice,separability.entries.w,wt.equalize,
-					assume.matched.for.oos,oos.use.imputed,
-					pom.config=pom.config,
-					w.vals= best.w.est,  #Use estimate from bootstrapping
-					size,
-					verbose) 
-	)
-	
-	
-	T0<- JOFC.results.test$T0
-	TA<- JOFC.results.test$TA
-	
-	
-	
-	power.mc[l, ] <- get_power(T0, TA, size)
-	list(power.mc=power.mc, 	optim.power=dissim.list$optim.power,best.w =rival.w )
-	
+                                d            =  p-1,
+                                pprime1      =  ifelse(model == "gaussian",p+q,p+q+2),   # cca arguments , signal+noise dimension
+                                pprime2      =  ifelse(model == "gaussian",p+q,p+q+2),   # cca arguments, signal+noise dimension
+                                Wchoice      =  "avg", #How to impute L
+                                pre.scaling  =  TRUE,  #Make the measurement spaces have the same scale
+                                oos          =  TRUE,  #embed test observations by Out-of-sampling  ?
+                                alpha        =  NULL,  
+                                n  =  300, m  =  100,    #Number of training and test observations
+                                nmc = 150,  #resample this many times to estimate w^* (Placeholder, not yet implemented)
+                                old.gauss.model.param = FALSE,
+                                separability.entries.w,  
+                                compare.pom.cca = TRUE,  # Run PoM and CCA to compare with JOFC?
+                                oos.use.imputed,
+                                level.mcnemar = 0.01,  #At what alpha, should unweighted(w = 0.5) and optimal w^* be compared
+                                def.w = 0.5,           #The null hypothesis is that power(def.w)  >= power(rival.w) (by default ,def.w is the w for the unweighted case which equals 0.5)
+                                rival.w = NULL,        
+                                proc.dilation = FALSE, #when investigating convergence of JOFC to PoM, should Procrustes analysis of configurations include the dilation component?
+                                assume.matched.for.oos, 
+                                w.vals,				  #w values to use for JOFC
+                                wt.equalize,		
+                                verbose = FALSE,
+                                power.comparison.test =  TRUE,cca.reg = FALSE,
+                                ...) {
+  print("run.bootstrapped.JOFC start")
+  w.max.index <- length(w.vals)	
+  size <- seq(0, 1, 0.01)
+  len <- length(size)
+  
+  power.w.star <- 0
+  repl.n <- 5
+  
+  power.mc =  array(0,dim = c(w.max.index,len))  #power values for JOFC in this MC replicate
+  
+  
+  T0.best.w <- matrix(0,2,m)    #Test statistics for JOFC (comparison of w = 0.5 with optimal w*
+  TA.best.w <- matrix(0,2,m)
+  
+  cont.table  <- matrix(0,2,2)
+  
+  Fid.Err.Term.1 <- array(0,dim = c(w.max.index))
+  Fid.Err.Term.2 <- array(0,dim = c(w.max.index))
+  Comm.Err.Term <- array(0,dim = c(w.max.index))
+  
+  dissim.list <- generate.dissim(p = p,  d = d, alpha = alpha,
+                                 model = model, old.gauss.model.param = old.gauss.model.param,
+                                 r = r, n = n, m = m, mc = mc, size = size, q = q, c.val = c.val, 
+                                 verbose = verbose, pre.scaling = pre.scaling) 
+  JOFC.results.list<-list()
+  for (repl.i in 1:repl.n ){
+  bootstrap.parts<- resample.for.param.estim(dissim.list)
+  
+  JOFC.results <-  run.jofc(bootstrap.parts$dissim.list.param.est$D1, 
+								bootstrap.parts$dissim.list.param.est$D2,
+								bootstrap.parts$dissim.list.param.est$D10A,
+								bootstrap.parts$dissim.list.param.est$D20,
+								bootstrap.parts$dissim.list.param.est$D2A,
+								bootstrap.parts$dissim.list.param.est$D.oos.1,
+								bootstrap.parts$dissim.list.param.est$D.oos.2.null ,
+								bootstrap.parts$dissim.list.param.est$D.oos.2.alt ,					
+								bootstrap.parts$dissim.list.param.est$L.in.oos.0  ,
+								bootstrap.parts$dissim.list.param.est$L.in.oos.A ,
+                                 
+								n=bootstrap.parts$dissim.list.param.est$estim.sample.n,
+								m=bootstrap.parts$dissim.list.param.est$estim.sample.m,
+                                 d,
+                                 model,oos,Wchoice,separability.entries.w,wt.equalize,
+                                 assume.matched.for.oos,oos.use.imputed,
+                                 pom.config = NULL,
+                                 w.vals = w.vals,
+                                 size,
+                                 verbose)
+						 JOFC.results.list<- c(   JOFC.results.list ,list( JOFC.results )) 
+					 }
+  
+  
+  best.w.est <- find.best.w.for.power(JOFC.results.list,w.vals,level.mcnemar)
+  
+  print("Starting the JOFC test using optimal w^*")
+  n.test<- n- (bootstrap.parts$dissim.list.param.est$estim.sample.size)
+  bootstrap.parts$dissim.list.test
+  rival.w.l<- 1-sqrt(1-best.w.est)
+  rival.w.u <- 1- (1-best.w.est)^2
+  if (best.w.est>0.925) rival.w <- rival.w.u
+  else rival.w <- rival.w.l
+  JOFC.results.test <-   run.jofc(bootstrap.parts$dissim.list.test$D1, 
+		  bootstrap.parts$dissim.list.test$D2,
+		  bootstrap.parts$dissim.list.test$D10A,
+		  bootstrap.parts$dissim.list.test$D20,
+		  bootstrap.parts$dissim.list.test$D2A,
+		  bootstrap.parts$dissim.list.test$D.oos.1,
+		  bootstrap.parts$dissim.list.test$D.oos.2.null ,
+		  bootstrap.parts$dissim.list.test$D.oos.2.alt ,					
+		  bootstrap.parts$dissim.list.test$L.in.oos.0  ,
+		  bootstrap.parts$dissim.list.test$L.in.oos.A ,
+		  
+                                      
+                                      n=n,m=m,
+                                      d,
+                                      model,oos,Wchoice,separability.entries.w,wt.equalize,
+                                      assume.matched.for.oos,oos.use.imputed,
+                                      pom.config = NULL,
+                                      w.vals =  c(best.w.est,rival.w),  #Use estimate from bootstrapping
+                                      size,
+                                      verbose) 
+  
+  
+  
+  T0.best.w.test <- JOFC.results.test$T0
+  TA.best.w.test <- JOFC.results.test$TA
+  
+  
+  
+  crit.value<-get_crit_val(T0.best.w.test[1,],level.mcnemar)
+  crit.value.2<-get_crit_val(T0.best.w.test[2,],level.mcnemar)
+  if (verbose){
+    print("crit.values")
+    print(crit.value)
+    print(crit.value.2)
+  }
+  cont.table[1,1] <- sum(T0.best.w.test[1,] <=crit.value & T0.best.w.test[2,] <=crit.value.2) + 
+    sum(TA.best.w[1,]>crit.value & TA.best.w[2,]>crit.value.2)
+  cont.table[1,2] <- sum(T0.best.w.test[1,]>crit.value & T0.best.w.test[2,] <=crit.value.2)  + 
+    sum(TA.best.w[1,] <=crit.value & TA.best.w[2,]>crit.value.2)
+  cont.table[2,1] <- sum(T0.best.w.test[1,] <=crit.value & T0.best.w.test[2,]>crit.value.2)  +
+    sum(TA.best.w[1,]>crit.value & TA.best.w[2,] <=crit.value.2)
+  cont.table[2,2] <- sum(T0.best.w.test[1,]>crit.value & T0.best.w.test[2,]>crit.value.2)   + 
+    sum(TA.best.w[1,] <=crit.value & TA.best.w[2,] <=crit.value.2) 
+  if (verbose) print("Cont table computed \n")
+  if (verbose) print(cont.table)
+  
+  
+  power.mc <- get_power(T0.best.w.test[1,], TA.best.w.test[1,], size)
+  print("run.bootstrapped.JOFC end")
+  return(list(power.mc = power.mc, cont.table = cont.table, 	optim.power = dissim.list$optim.power,best.w  = best.w.est ))
+  
 }
 
 
 resample.for.param.estim <- function(dissim.list) {
-	n <- nrow(D1)
-	total_n <- nrow(D10A)
-	m <- total_n - n
-	sample.for.param.est<-sample(1:n, size=floor(n/3))
-	sample.for.param.est.insample <-sample (sample.for.param.est,size=floor(2*n/9))
-	sample.log <- rep(F,length(sample.for.param.est))
-	sample.log[sample.for.param.est.insample]<- T
-	oos.sample.0 <- which(!sample.log)
-	shuff.sample <- sample(which(!sample.log),sum(!sample.log))
-	sample.alt <- c(sample.for.param.est.insample,shuff.sample)
+
+	#Size of given training set	
+  n <- nrow(dissim.list$D1)
+  total_n <- nrow(dissim.list$D10A)
+  # m: number of test pairs
+  m <- total_n - n
+  
+  estim.sample.size <- floor(n/3)
+  estim.sample.n <-  estim.sample.size
+  estim.sample.m <- n-estim.sample.n
+  sample.for.param.est	<- 1:n
+  #estim.sample.n <- floor(2*n/9)
+  #estim.sample.m <- estim.sample.size-estim.sample.n
+  #separate 1/3 of matched insample for estimation of w^*
+	sample.for.param.est.insample <-sample(x=sample.for.param.est, size = estim.sample.n)
+  #separate 2/9 of matched insample , (2/3) of sample.for.param.est as insample,
+  #the remaining will be used for oos embedding
+  #This can be done multiple times, and w^* can be estimated as the one that gives the best power
+  #sample.for.param.est.insample <- sample (x=sample.for.param.est, size =  estim.sample.n)
 	
-	L.in.oos.0.param.est <- (D1[sample.for.param.est.insample,oos.sample.0]+
-				D2[sample.for.param.est.insample,oos.sample.0])/2 
-	L.in.oos.A.param.est  <- (D1[sample.for.param.est.insample,oos.sample.A]+
-				D2[sample.for.param.est.insample,oos.sample.A])/2 
-	data.for.param.est  <- list(D1=D1[sample.for.param.est.insample,sample.for.param.est.insample],
-			D2= D2 [sample.for.param.est.insample,sample.for.param.est.insample] ,
-			D10A= D1[sample.for.param.est,sample.for.param.est] ,
-			D20 = D2[sample.for.param.est,sample.for.param.est],
-			D2A = D2[sample.alt,sample.alt],
-			D.oos.1= D1[oos.sample.0,oos.sample.0] ,
-			D.oos.2.null = D2[oos.sample.0,oos.sample.0],
-			D.oos.2.alt=  D2[shuff.sample,shuff.sample],
-			L.in.oos.0 = L.in.oos.0.param.est,
-			L.in.oos.A = L.in.oos.A.param.est
-	)
-	
-	data.for.test  <- list(D1=D1[-sample.for.param.est,-sample.for.param.est],
-			D2= D2[-sample.for.param.est,-sample.for.param.est] ,
-			D10A= D10A[-sample.for.param.est,-sample.for.param.est] ,
-			D20 = D20[-sample.for.param.est,-sample.for.param.est],
-			D2A = D2A[-sample.for.param.est,-sample.for.param.est],
-			D.oos.1= D.oos.1 ,	D.oos.2.null = D.oos.2.null,
-			D.oos.2.alt=  D.oos.2.alt,
-			L.in.oos.0 = L.in.oos.0, L.in.oos.A = L.in.oos.A
-	)
-	
-	
-	return(list(dissim.list.param.est=data.for.param.est,
-					dissim.list.test=data.for.test)) 
-	
-	
+  sample.log <- rep(FALSE,n)
+  sample.log[sample.for.param.est.insample]<- TRUE
+  # OOS embedding sample indices that will be matched pair set
+  oos.sample.0 <- which(!sample.log)
+  shuff.sample <- sample( oos.sample.0)
+  # OOS embedding sample indices that will be unmatched pair set
+  sample.alt <- c(sample.for.param.est.insample,shuff.sample)
+  
+  L.in.oos.0.imp <- (dissim.list$D1[sample.for.param.est.insample,oos.sample.0]+
+			         dissim.list$D2[sample.for.param.est.insample,oos.sample.0])/2
+  L.in.oos.A.imp <- (dissim.list$D1[sample.for.param.est.insample,shuff.sample]+
+			         dissim.list$D2[sample.for.param.est.insample,shuff.sample])/2 
+
+  L.in.oos.0.param.est <- omnibusM.inoos( L.in.oos.0.imp , L.in.oos.0.imp, matrix(NA,estim.sample.n,estim.sample.m))
+  L.in.oos.A.param.est  <- omnibusM.inoos( L.in.oos.A.imp , L.in.oos.A.imp, matrix(NA,estim.sample.n,estim.sample.m))
+  
+  #The data for estimating w^*
+  data.for.param.est  <- list(D1 = dissim.list$D1[sample.for.param.est.insample,sample.for.param.est.insample],
+                              D2 =  dissim.list$D2 [sample.for.param.est.insample,sample.for.param.est.insample] ,
+                              D10A = dissim.list$D1[sample.for.param.est,sample.for.param.est] ,
+                              D20  =  dissim.list$D2[sample.for.param.est,sample.for.param.est],
+                              D2A  =  dissim.list$D2[sample.alt,sample.alt],
+                              D.oos.1 =  dissim.list$D1[oos.sample.0,oos.sample.0] ,
+                              D.oos.2.null  =  dissim.list$D2[oos.sample.0,oos.sample.0],
+                              D.oos.2.alt =   dissim.list$D2[shuff.sample,shuff.sample],
+                              L.in.oos.0  =  L.in.oos.0.param.est,
+                              L.in.oos.A  =  L.in.oos.A.param.est,
+                              estim.sample.size  =   estim.sample.size,
+                              estim.sample.n  =  estim.sample.n,
+                              estim.sample.m  =  estim.sample.m
+  )
+  
+  #The data for testing predictor with w*
+  data.for.test  <- list(D1 = dissim.list$D1,#[-sample.for.param.est,-sample.for.param.est],
+                         D2 =  dissim.list$D2,#[-sample.for.param.est,-sample.for.param.est] ,
+                         D10A =  dissim.list$D10A,#[-sample.for.param.est,-sample.for.param.est] ,
+                         D20  =  dissim.list$D20,#[-sample.for.param.est,-sample.for.param.est],
+                         D2A  =  dissim.list$D2A,#[-sample.for.param.est,-sample.for.param.est],
+                         D.oos.1 =  dissim.list$D.oos.1 ,	D.oos.2.null  =  dissim.list$D.oos.2.null,
+                         D.oos.2.alt =   dissim.list$D.oos.2.alt,
+                         L.in.oos.0  =  dissim.list$L.in.oos.0, L.in.oos.A  =  dissim.list$L.in.oos.A
+  )
+  
+  
+  diss.list<-list(dissim.list.param.est = data.for.param.est,dissim.list.test = data.for.test)
+  
+   #end with
+  
+  return(diss.list) #end return
+  
+  
 }
 
 
 
 
-find.best.w.for.power <- function(JOFC.res,w.vals.vec) {
+find.best.w.for.power <- function(JOFC.res.reps,w.vals.vec,level.for.w.compare = 0.05) {
 	#w
-	w.val.len <- length(w.vals.vec)  
-	for (i in 1:w.val.len){
-		beta.w<-sim.res$power[i,,2]
-		avg.power.w[i]<-mean(beta.w)		
+	w.vals.best.count <- rep(0,length(w.vals.vec))
+	for (JOFC.res  in JOFC.res.reps){
+		w.val.len <- length(w.vals.vec)
+		beta.w<- rep(0,w.val.len)
+		for (l in 1:w.val.len){
+			beta.w[l]<-get_power(JOFC.res$T0[l,], JOFC.res$TA[l,], level.for.w.compare)
+			
+		}
+		best.w.list <- which.max((beta.w))
+		w.vals.best.count[best.w.list]<- w.vals.best.count[best.w.list] + 1 
 	}
-	max.w <- which.max((JOFC.res$avg.power.w))
+	
+	
+	max.w <- which.max(w.vals.best.count)
+	
+	if   (sum(w.vals.best.count==w.vals.best.count[max.w])>1){
+		auc.sum <-  rep(0,length(w.vals.vec))
+		for (JOFC.res  in JOFC.res.reps) {
+			w.val.len <- length(w.vals.vec)
+			beta.w<- rep(0,w.val.len)
+			for (l in 1:w.val.len){
+				
+				auc[l]<-sum(outer(JOFC.res$T0[l,], JOFC.res$TA[l,],function(x,y){x<y}))
+				
+			}
+			auc.sum <- auc.sum+auc
+			
+			
+		}
+		
+		max.w <- which.max(auc.sim)
+	}
+	
+	
+	
 	best.w.value <- w.vals.vec [max.w]
 	if (verbose) print("Estimate of wstar for average power curve")
 	if (verbose)  print(best.w.value)
-	#sink("debug-wstar.txt")
-	#print(sim.res$power[,,6])
-	
-	#Which w value was the best w for the highest number of mc replicates
-	#Note that multiple w.values might have the best power
-	sim.res$wstar.idx.estim.mc<- apply(JOFC.res$power[,,6],2,function(x) which(x==max(x)))
+	return(best.w.value)
 	
 	
 }
@@ -975,9 +1064,9 @@ generate.dissim <- function(p,  d, alpha, model, old.gauss.model.param, r, n, m,
 	D2<-D2*s
 	
 	
-	D.oos.1<-dist(Y1)
-	D.oos.2.null <- dist(Y20)
-	D.oos.2.alt <- dist(Y2A)
+  D.oos.1<-as.matrix(dist(Y1))
+  D.oos.2.null <- as.matrix(dist(Y20)) 
+  D.oos.2.alt <- as.matrix(dist(Y2A))
 	
 	ideal.omnibus.0  <- as.matrix(dist(rbind(X1,X2,Y1,Y20)))
 	ideal.omnibus.A  <- as.matrix(dist(rbind(X1,X2,Y1,Y2A)))
@@ -1788,3 +1877,43 @@ The.mode <- function(x, show_all_modes = F)
 		return(The_mode[1]) 
 	} 
 } 
+
+
+
+
+
+summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
+		conf.interval=.95, .drop=TRUE) {
+	require(plyr)
+	
+	# New version of length which can handle NA's: if na.rm==T, don't count them
+	length2 <- function (x, na.rm=FALSE) {
+		if (na.rm) sum(!is.na(x))
+		else       length(x)
+	}
+	
+	# This is does the summary; it's not easy to understand...
+	datac <- ddply(data, groupvars, .drop=.drop,
+			.fun= function(xx, col, na.rm) {
+				c( N    = length2(xx[,col], na.rm=na.rm),
+						mean = mean   (xx[,col], na.rm=na.rm),
+						sd   = sd     (xx[,col], na.rm=na.rm)
+				)
+			},
+			measurevar,
+			na.rm
+	)
+	
+	# Rename the "mean" column    
+	datac <- rename(datac, c("mean"=measurevar))
+	
+	datac$se <- datac$sd / sqrt(datac$N)  # Calculate standard error of the mean
+	
+	# Confidence interval multiplier for standard error
+	# Calculate t-statistic for confidence interval: 
+	# e.g., if conf.interval is .95, use .975 (above/below), and use df=N-1
+	ciMult <- qt(conf.interval/2 + .5, datac$N-1)
+	datac$ci <- datac$se * ciMult
+	
+	return(datac)
+}
