@@ -98,20 +98,20 @@ corr.matches.wt.dice.directed<-worm_exp(num_iter=100,n_vals=n_vals_worm,embed.di
 avg.corr.worm.wt.dice.directed <- corr.matches.wt.dice.directed/(total_v-n_vals_worm)
 
 
+n_vals_worm=c(seq(20,100,20),seq(125,200,25))
 
 
-n_vals_worm <- c(100)
-corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=16,n_vals=n_vals_worm,embed.dim=10,
+corr.matches.wt.dice.unwt.directed<-worm_exp_par_sf_w(num_iter=20,n_vals=n_vals_worm,embed.dim=10,
 		weighted.graph=FALSE,diss_measure="C_dice_weighted",symmetrize = FALSE,
-		preselected.seeds=NULL,preselected.test=NULL,w.vals=  c(0.3,0.5)#c(0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95)
+		preselected.seeds=NULL,preselected.test=NULL,w.vals= 0.8
 )
 
 
 
-n_vals_worm <- c(175)
-corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=16,n_vals=n_vals_worm,embed.dim=10,
+n_vals_worm <- c(100)
+corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=100,n_vals=n_vals_worm,embed.dim=10,
 		weighted.graph=FALSE,diss_measure="C_dice_weighted",symmetrize = FALSE,
-		preselected.seeds=NULL,preselected.test=NULL,w.vals=  c(0.1,0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95)
+		preselected.seeds=NULL,preselected.test=NULL,w.vals=  c(0.01,0.1,0.3,0.5,0.65,0.75,0.85,0.9,0.95,0.99)
 )
 
 
