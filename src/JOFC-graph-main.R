@@ -20,9 +20,9 @@ n_vals<- c(seq(10,20,5),seq(20,90,10))
 corr.results.list<- list()
 
 for (mc in 1:nmc){
-  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=12,
+  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=10,
                                      diss_measure="default",it.per.G=1,
-                                     num_v_to_embed_at_a_time=1)
+                                     num_v_to_embed_at_a_time=1,w.vals=0.8)
   corr.results.list<- c(corr.results.list,list(corr.results.mc))
 }
 
@@ -48,10 +48,11 @@ nmc <- 50
 pert<- seq(0,0.5,0.1)
 n_vals<- c(seq(15,20,5),seq(20,90,10),seq(100,250,25))
 
+n_vals< -  c(seq(15,20,5),seq(20,90,10))
 corr.results.list.300<- list()
 
 for (mc in 1:nmc){
-  corr.results.mc <-  bitflip_MC_rep (pert,n,n_vals,embed.dim=15,
+  corr.results.mc <-  bitflip_MC_rep (pert,n,n_vals,embed.dim=10,
                                       diss_measure="default",it.per.G=1,
                                       num_v_to_embed_at_a_time=1)
   corr.results.list.300<- c(corr.results.list.300,list(corr.results.mc))
@@ -74,16 +75,22 @@ corr.results.avg <- corr.results.avg/length( corr.results.list)
 total_v<-253
 
 n_vals_worm=c(seq(20,100,20),seq(125,200,25))
+w_vals_worm = c(0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95)
+w_vals_worm = c(0.8)
 
 
 
+corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=16,n_vals=n_vals_worm,embed.dim=10,
+                                                        weighted.graph=FALSE,diss_measure="C_dice_weighted",symmetrize = FALSE,
+                                                        preselected.seeds=NULL,preselected.test=NULL,w.vals=  c(0.3,0.5)#c(0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95)
+)
+avg.corr.worm.unwt.directed.2<- corr.matches.dice.unwt.directed.2/(total_v-n_vals_worm)
 
 
-corr.matches.wt.dice<-worm_exp(num_iter=100,n_vals=n_vals_worm,embed.dim=10,
-                               weighted.graph=TRUE,diss_measure="C_dice_weighted",symmetrize = TRUE)
-avg.corr.worm.wt.dice <- corr.matches.wt.dice/(total_v-n_vals_worm)
-
-
+corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=16,n_vals=n_vals_worm,embed.dim=10,
+                                                        weighted.graph=FALSE,diss_measure="C_dice_weighted",symmetrize = FALSE,
+                                                        preselected.seeds=NULL,preselected.test=NULL,w.vals=  c(0.3,0.5)#c(0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95)
+)
 
 
 

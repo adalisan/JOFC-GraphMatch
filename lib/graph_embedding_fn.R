@@ -506,7 +506,7 @@ graph2dissimilarity <- function (G,Gp,
 		
 		# Embed in-sample using different weight matrices (differentw values)
 		
-		dim.increment<-10
+		dim.increment<-5
 		
 		init.conf  <-  NULL
 		
@@ -571,7 +571,7 @@ graph2dissimilarity <- function (G,Gp,
 				full.seed.match   <-    TRUE
 				print(paste("optimal dim is ", embed.dim))
 			}
-			if (all( True.match.last.memory== numTrueMatch)) {
+			if (all( True.match.last.memory>= numTrueMatch)) {
 				full.seed.match   <-    TRUE
 				print(paste("optimal dim is ", embed.dim))
 			}
@@ -632,7 +632,7 @@ graph2dissimilarity <- function (G,Gp,
 				full.seed.match   <-    TRUE
 				print(paste("optimal dim is ", embed.dim))
 			}
-			if (all( True.match.last.memory== numTrueMatch)) {
+			if (all( True.match.last.memory>= numTrueMatch)) {
 				full.seed.match   <-    TRUE
 				print(paste("optimal dim is ", embed.dim))
 			}
@@ -715,7 +715,7 @@ graph2dissimilarity <- function (G,Gp,
 			wt.equalize  =  FALSE,
 			separability.entries.w  =  FALSE,
 			assume.matched.for.oos   =   FALSE ,
-			w.vals  =  0.5,
+			w.vals  =  0.8,
 			oos.embed.n.at.a.time   =  	oos.embed.n.at.a.time ,
 			mds.init.method="gower") {
 		min.correct.frac.for.full.seed<-0.95
@@ -865,12 +865,16 @@ graph2dissimilarity <- function (G,Gp,
 			w.vals,
 			oos.embed.n.at.a.time   =   sum(!in.sample.ind)/2,
 			mds.init.method="gower"){
-		min.correct.frac.for.full.seed<-0.95
+		min.correct.frac.for.full.seed<-0.9
 		#sink("Embed.debug.txt")
-		matching <- 0
+		
+    matching <- 0
+    #Number of dimensions to increase for embedding dimension search
+		dim.increment<-3
 		Y.embeds <-  list()
 		oos.use.imputed <-   FALSE
 		w.max.index <-  length(w.vals)
+    
 		# number of insample pairs
 		n <-  sum(in.sample.ind)/2
 		# number of oos pairs
@@ -886,11 +890,11 @@ graph2dissimilarity <- function (G,Gp,
 		v.embed.order.2  <-   sample(all.oos.indices[all.m+(1:all.m)],all.m,replace  =  FALSE)
 		embed.order    <-   c(v.embed.order,v.embed.order.2)
 		
-		#number  of groups that are  embedded at the same time
+		#number  of groups of vertices where each group of vertices are  embedded at the same time
 		num.embed.groups   <-   ceiling(all.m/oos.embed.n.at.a.time)
 		insample.indices <-   which(in.sample.ind)
 		
-		# Embed in-sample using different weight matrices (differentw values)
+		# Embed in-sample using different weight matrices (different w values)
 		
 		l<-1
 			w.val.l  <-   w.vals[1]
@@ -899,14 +903,16 @@ graph2dissimilarity <- function (G,Gp,
 		
 		
 		# Find the minimum embedding dimension that matches all the seeds correctly
+    # when only the seeds are embedded
 		full.seed.match  <-   FALSE
 		embed.dim  <-  d.start
 		prevTrueMatch = -1
 		True.match.last.memory <- rep(-1,3)
+    embed.dim<-embed.dim-dim.increment
 		
 		while  (!full.seed.match) {
 			X.embeds.f <- list()
-			embed.dim   <-   embed.dim + 5
+			embed.dim   <-   embed.dim + dim.increment
 			
 			X.embeds.f <-  JOFC.Insample.Embed(D.in,embed.dim,
 					w.val.l,sep.err.w=TRUE,
@@ -949,14 +955,20 @@ graph2dissimilarity <- function (G,Gp,
 			True.match.last.memory[3] <-   numTrueMatch
 			
 		} 
-		full.seed.match<-FALSE
+		
+    
+    # Find the minimum embedding dimension that matches all the seeds correctly
+		# when the seeds and test vertices are embedded
+		
+    
+    full.seed.match<-FALSE
 		prevTrueMatch = -1
 		True.match.last.memory <- rep(-1,3)
-		embed.dim <- embed.dim -5
+		embed.dim <- embed.dim - dim.increment
 		
 		
 		while  (!full.seed.match) {
-			embed.dim   <-   embed.dim + 5
+			embed.dim   <-   embed.dim + dim.increment
 			
 			X.embeds <-  try(JOFC.Insample.Embed(D.in,ndimens=embed.dim,
 							w.val.l,sep.err.w=TRUE,
@@ -964,7 +976,7 @@ graph2dissimilarity <- function (G,Gp,
 							wt.equalize  =  wt.equalize))
 			if (inherits(X.embeds,"try-error")) {
 				print('Unable to embed via smacof')
-				embed.dim<-embed.dim-5
+				embed.dim<-embed.dim-dim.increment
 				X.embeds<-list(cmdscale(D.in, k=embed.dim))
 				
 				full.seed.match   <-    TRUE
@@ -983,14 +995,18 @@ graph2dissimilarity <- function (G,Gp,
 			print(dim(X))
 			print(dim(Y.0))
 			print(sum(in.sample.ind))
+      
+      #Y.0 will be the full embedding config. including in-sample and oos vertices
 			Y.0[in.sample.ind,] <- X
 			
-			#Vertices are embedded in groups
+			#Vertices are embedded in groups:
+      # oos.embed.n.at.a.time  pairs (one vertex from each graph) of vertices form each group.
 			for (embed.group in 1:num.embed.groups){
 				#sink()
 				#sink("Embedding.debug.txt")
 				#embed the next test.m (oos) vertices
 				test.m  <-   oos.embed.n.at.a.time 
+        #the last group might have less than  oos.embed.n.at.a.time vertices
 				if (embed.group == num.embed.groups)
 					test.m  <-  all.m-(num.embed.groups-1)*oos.embed.n.at.a.time
 				embed.ind <-  embed.order[(oos.embed.n.at.a.time*(embed.group-1))+(1:test.m)]
@@ -1023,18 +1039,22 @@ graph2dissimilarity <- function (G,Gp,
 				oos.Weight.mat.in <-  matrix(0,2*n,2*n)
 				
 				
-				# If assume.matched.for.oos is true, we assume OOS dissimilarities are matched(in reality,
-				# they are matched for the matched pairs, but unmatched for the unmatched pairs)
-				# If assume.matched.for.oos is true, we ignore the dissimilarities between matched/unmatched 
-				# pairs
+			  #We ignore dissimilarities btw oos vertices,
+        #however, the oos dissimilarities between oos vertices are actually available 
+        #if oos.embed.n.at.a.time is larger than 1. It might make sense to have these weights
+        #nonzero for the test.m \times test.m matrices on the diagonal.
 				
-				oos.Weight.mat.oos <-   matrix(0,2*test.m,2*test.m)
+				#oos.Weight.mat.oos <-   matrix(0,2*test.m,2*test.m)
 				
+        oos.Weight.mat.oos <-   rbind(cbind(matrix(1-w.val.l,test.m,test.m), matrix(0,test.m,test.m) ),
+				                              cbind(matrix(0,test.m,test.m),matrix(1-w.val.l,test.m,test.m))
+				)
 				
 				
 				# if (oos.use.imputed is true) we treat the dissimiilarities between  in-sample and out-of-sample measurements
 				# from different conditions like fidelity terms
-				# otherwise they are ignored
+				# otherwise they are ignored.
+        # The  n \times test.m matrices  on the diagonals are fidelity terms
 				if (oos.use.imputed){
 					oos.Weight.mat.w  <-   matrix(1-w.val.l,2*n,2*test.m)
 				} else{
@@ -1128,7 +1148,7 @@ graph2dissimilarity <- function (G,Gp,
 							wt.equalize  =  wt.equalize))
 			if (inherits(X.embeds,"try-error")) {
 				print('Unable to embed via smacof')
-				embed.dim<-embed.dim-5
+				embed.dim<-embed.dim-dim.increment
 				X.embeds<-list(cmdscale(D.in, k=embed.dim))
 				
 				full.seed.match   <-    TRUE
