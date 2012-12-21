@@ -20,8 +20,8 @@ n_vals<- c(seq(10,20,5),seq(20,90,10))
 corr.results.list<- list()
 
 for (mc in 1:nmc){
-  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=4,
-                                     diss_measure="default",it.per.G=1,
+  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=2,
+                                     diss_measure="C_dice_weighted",it.per.G=1,
                                      num_v_to_embed_at_a_time=1,w.vals=c(0.01,0.8))
   corr.results.list<- c(corr.results.list,list(corr.results.mc))
 }
