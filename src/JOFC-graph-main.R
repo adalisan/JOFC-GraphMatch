@@ -20,11 +20,45 @@ n_vals<- c(seq(10,20,5),seq(20,90,10))
 corr.results.list<- list()
 
 for (mc in 1:nmc){
-  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=10,
+  corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=4,
                                      diss_measure="default",it.per.G=1,
-                                     num_v_to_embed_at_a_time=1,w.vals=0.8)
+                                     num_v_to_embed_at_a_time=1,w.vals=c(0.01,0.8))
   corr.results.list<- c(corr.results.list,list(corr.results.mc))
 }
+
+corr.results.unlist<-Reduce("c",corr.results.list,init=list())
+corr.results.avg<-Reduce("+",corr.results.unlist)/nmc
+corr.results.var<-lapply(corr.results.unlist,function(x){(x-corr.results.avg)^2})
+corr.results.var<-Reduce("+",corr.results.var)/nmc
+corr.results.var<-corr.results.var/sqrt(nmc)
+corr.results.sd<-sqrt(corr.results.var)
+
+corr.results.avg.frac <- sweep( corr.results.avg,1,n-n_vals,"/")
+corr.results.sd.frac <- sweep( corr.results.sd,1,n-n_vals,"/")
+
+
+
+w.i = 1
+plot(n_vals, as.vector(corr.results.avg[,1,w.i]) ,xlab="Hard seeds",
+		ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[1],type="l")
+
+npert<-length(pert)
+for(ipert in 2:npert)
+{
+	lines(n_vals, as.vector(corr.results.avg[,ipert,w.i]) ,xlab="Hard seeds",
+			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert])
+}  
+title("w.i=1 varying pert.param")
+
+
+w.i=2
+for(ipert in 1:npert)
+{
+	lines(n_vals, as.vector(corr.results.avg[,ipert,w.i]) ,xlab="Hard seeds",
+			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert],lty=2)
+}  
+title("w.i=2 varying pert.param")
+
 
 
 
@@ -75,8 +109,8 @@ corr.results.avg <- corr.results.avg/length( corr.results.list)
 total_v<-253
 
 n_vals_worm=c(seq(20,100,20),seq(125,200,25))
-w_vals_worm = c(0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95)
-w_vals_worm = c(0.8)
+w_vals_worm = c(0.01,0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95,0.99)
+
 
 
 
