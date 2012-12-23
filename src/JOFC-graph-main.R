@@ -39,13 +39,13 @@ corr.results.sd.frac <- sweep( corr.results.sd,1,n-n_vals,"/")
 
 
 w.i = 1
-plot(n_vals, as.vector(corr.results.avg[,1,w.i]) ,xlab="Hard seeds",
+plot(n_vals, as.vector(corr.results.avg.frac[,1,w.i]) ,xlab="Hard seeds",
 		ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[1],type="l")
 
 npert<-length(pert)
 for(ipert in 2:npert)
 {
-	lines(n_vals, as.vector(corr.results.avg[,ipert,w.i]) ,xlab="Hard seeds",
+	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert])
 }  
 title("w.i=1 varying pert.param")
@@ -54,7 +54,7 @@ title("w.i=1 varying pert.param")
 w.i=2
 for(ipert in 1:npert)
 {
-	lines(n_vals, as.vector(corr.results.avg[,ipert,w.i]) ,xlab="Hard seeds",
+	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert],lty=2)
 }  
 title("w.i=2 varying pert.param")
@@ -114,9 +114,10 @@ w_vals_worm = c(0.01,0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95,0.99)
 
 
 
-corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=16,n_vals=n_vals_worm,embed.dim=10,
+corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=24,n_vals=n_vals_worm,embed.dim=10,
                                                         weighted.graph=FALSE,diss_measure="C_dice_weighted",symmetrize = FALSE,
-                                                        preselected.seeds=NULL,preselected.test=NULL,w.vals=  c(0.3,0.5)#c(0.3,0.5,0.65,0.75,0.8,0.85,0.9,0.95)
+                                                        preselected.seeds=NULL,preselected.test=NULL,
+                                                        w.vals=  w_vals_worm)
 )
 avg.corr.worm.unwt.directed.2<- corr.matches.dice.unwt.directed.2/(total_v-n_vals_worm)
 

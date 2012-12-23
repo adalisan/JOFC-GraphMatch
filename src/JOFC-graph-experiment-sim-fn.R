@@ -187,7 +187,7 @@ bitflip_exp_w<-function (nmc,pert,n,n_vals,embed.dim=6,w.vals=0.8,diss_measure)
   } else if (FALSE &&                     # doSMP is buggy
     require("doSMP")) {
     workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
-    on.exit(stopWorkers(w), add = TRUE)
+    on.exit(stopWorkers(workers), add = TRUE)
     registerDoSMP(w)
   } else if (require("doSNOW")) {
     cl <- snow::makeCluster(num.cores, type = "SOCK")
