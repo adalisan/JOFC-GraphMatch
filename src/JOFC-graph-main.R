@@ -118,8 +118,8 @@ corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=24,n_vals=n_val
                                                         weighted.graph=FALSE,diss_measure="C_dice_weighted",symmetrize = FALSE,
                                                         preselected.seeds=NULL,preselected.test=NULL,
                                                         w.vals=  w_vals_worm)
-)
-avg.corr.worm.unwt.directed.2<- corr.matches.dice.unwt.directed.2/(total_v-n_vals_worm)
+
+avg.corr.worm.unwt.directed.2<- corr.matches.wt.dice.unwt.directed.2/(total_v-n_vals_worm)
 
 
 corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=16,n_vals=n_vals_worm,embed.dim=10,

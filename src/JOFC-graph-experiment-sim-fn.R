@@ -188,7 +188,7 @@ bitflip_exp_w<-function (nmc,pert,n,n_vals,embed.dim=6,w.vals=0.8,diss_measure)
     require("doSMP")) {
     workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
     on.exit(stopWorkers(workers), add = TRUE)
-    registerDoSMP(w)
+    registerDoSMP(workers)
   } else if (require("doSNOW")) {
     cl <- snow::makeCluster(num.cores, type = "SOCK")
     on.exit(snow::stopCluster(cl), add = TRUE)
@@ -231,6 +231,7 @@ bitflip_exp_w<-function (nmc,pert,n,n_vals,embed.dim=6,w.vals=0.8,diss_measure)
       corr.match.sd[i,j,w.i] <- sd(corr.match.array[i,,j,w.i])
     }
   
+  require(RColorBrewer)
   
   
   colors.vec <- c("red","green","aquamarine","purple",
@@ -267,7 +268,10 @@ bitflip_exp_w<-function (nmc,pert,n,n_vals,embed.dim=6,w.vals=0.8,diss_measure)
     lines(n_vals, as.vector(corr.match.avg[,ipert,w.i]) ,xlab="Hard seeds",
           ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert])
   }  
-  title("w.i=1 varying pert.param")
+  lg.txt<-c("varying pert.param")
+  title(lg.txt)
+  if (.Platform$OS.type != "windows") {windows() 
+  } else {X11()}
   
   ipert = 2
   plot(n_vals, as.vector(corr.match.avg[,ipert,1]) ,xlab="Hard seeds",
@@ -279,7 +283,10 @@ bitflip_exp_w<-function (nmc,pert,n,n_vals,embed.dim=6,w.vals=0.8,diss_measure)
           ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec.brew[w.i])
   }  
   }
-  title("ipert=2 varying w")
+  
+  title.txt <- "ipert=2 varying w"
+  title(title.txt)
+  
   
   
   
@@ -359,8 +366,8 @@ worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 	} else if (FALSE &&                     # doSMP is buggy
 			require("doSMP")) {
 		workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
-		on.exit(stopWorkers(w), add = TRUE)
-		registerDoSMP(w)
+		on.exit(stopWorkers(workers), add = TRUE)
+		registerDoSMP(workers)
 	} else if (require("doSNOW")) {
 		cl <- snow::makeCluster(num.cores, type = "SOCK")
 		on.exit(snow::stopCluster(cl), add = TRUE)
