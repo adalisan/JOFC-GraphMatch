@@ -397,7 +397,8 @@ worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 				graph.is.directed= graph.is.directed,
 				preselected.seeds=preselected.seeds,
 				preselected.test =preselected.test,
-				w.vals =w.vals
+				w.vals =w.vals,
+				return.list=TRUE
 		)
 		
 		#dimnames(corr.matches)[[1]]<-as.list(n_vals)
