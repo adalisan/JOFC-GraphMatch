@@ -533,9 +533,9 @@ graph2dissimilarity <- function (G,Gp,
 					in.sample.ind,
 					oos, 
 					embed.dim,
-					wt.equalize  =  FALSE,
-					separability.entries.w  =  FALSE,
-					assume.matched.for.oos   =   FALSE ,
+					wt.equalize  =  wt.equalize,
+					separability.entries.w  =  separability.entries.w,
+					assume.matched.for.oos   =   assume.matched.for.oos ,
 					w.vals  =  w.vals.l,
 					oos.embed.n.at.a.time   =   	oos.embed.n.at.a.time ,
 					mds.init.method="gower")
@@ -597,9 +597,9 @@ graph2dissimilarity <- function (G,Gp,
 					in.sample.ind,
 					oos, 
 					embed.dim,
-					wt.equalize  =  FALSE,
-					separability.entries.w  =  FALSE,
-					assume.matched.for.oos   =   FALSE ,
+					wt.equalize  =  wt.equalize,
+					separability.entries.w  =  separability.entries.w ,
+					assume.matched.for.oos   =   assume.matched.for.oos ,
 					w.vals  =  w.vals.l,
 					oos.embed.n.at.a.time   =   oos.embed.n.at.a.time ,
 					mds.init.method="gower")
@@ -657,9 +657,9 @@ graph2dissimilarity <- function (G,Gp,
 						in.sample.ind,
 						oos, 
 						embed.dim,
-						wt.equalize  =  FALSE,
-						separability.entries.w  =  FALSE,
-						assume.matched.for.oos   =   FALSE ,
+						wt.equalize  =  wt.equalize,
+						separability.entries.w  =  separability.entries.w ,
+						assume.matched.for.oos   =   assume.matched.for.oos  ,
 						w.vals  =  w.val.l,
 						oos.embed.n.at.a.time   =   	oos.embed.n.at.a.time ,
 						mds.init.method="gower")
@@ -915,7 +915,7 @@ graph2dissimilarity <- function (G,Gp,
 			embed.dim   <-   embed.dim + dim.increment
 			
 			X.embeds.f <-  JOFC.Insample.Embed(D.in,embed.dim,
-					w.val.l,sep.err.w=TRUE,
+					w.val.l,sep.err.w=separability.entries.w ,
 					init.conf  =  init.conf,
 					wt.equalize  =  wt.equalize)
 			# if (inherits(X.embeds,"try-error")) {
@@ -971,7 +971,7 @@ graph2dissimilarity <- function (G,Gp,
 			embed.dim   <-   embed.dim + dim.increment
 			
 			X.embeds <-  try(JOFC.Insample.Embed(D.in,ndimens=embed.dim,
-							w.val.l,sep.err.w=TRUE,
+							w.val.l,sep.err.w=separability.entries.w ,
 							init.conf  =  init.conf,
 							wt.equalize  =  wt.equalize))
 			if (inherits(X.embeds,"try-error")) {
@@ -1143,7 +1143,7 @@ graph2dissimilarity <- function (G,Gp,
 		for (l in 2:w.max.index){
 			w.val.l  <-   w.vals[l]
 			X.embeds <-  try(JOFC.Insample.Embed(D.in,ndimens=embed.dim,
-							w.val.l,sep.err.w=TRUE,
+							w.val.l,sep.err.w=separability.entries.w,
 							init.conf  =  X,
 							wt.equalize  =  wt.equalize))
 			if (inherits(X.embeds,"try-error")) {
@@ -1164,9 +1164,12 @@ graph2dissimilarity <- function (G,Gp,
 			X  <-   X.embeds[[1]]
 			dim.X <- dim(X)
 			Y.0  <-   matrix(-1,length(in.sample.ind),dim.X[2])
+			sink("graph_embedding.txt")
+			print("Embed.Nodes.one.atat")
 			print(dim(X))
 			print(dim(Y.0))
 			print(sum(in.sample.ind))
+			sink()
 			Y.0[in.sample.ind,] <- X
 			
 			#Vertices are embedded in groups
