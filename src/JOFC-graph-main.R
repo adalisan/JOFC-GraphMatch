@@ -121,6 +121,47 @@ corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=24,n_vals=n_val
 
 avg.corr.worm.unwt.directed.2<- corr.matches.wt.dice.unwt.directed.2/(total_v-n_vals_worm)
 
+corr.match.list<-list()
+for (core_it in 1:8){
+  reshap.vec <- array(corr.matches.wt.dice.unwt.directed.2[(core_it-1)*270+(1:270)],dim=c(length(n_vals_worm),3,w.max.index))
+  
+  list.em <- list(reshap.vec[,1,],reshap.vec[,2,],reshap.vec[,3,])
+  corr.match.list<-c(corr.match.list,list.em)
+}
+
+
+
+
+corr.results.unlist<-Reduce("c",corr.match.list,init=list())
+corr.results.avg<-Reduce("+",corr.match.list)/24
+corr.results.var<-lapply(corr.results.unlist,function(x){(x-corr.results.avg)^2})
+corr.results.var<-Reduce("+",corr.results.var)/24
+corr.results.var<-corr.results.var/sqrt(24)
+corr.results.sd<-sqrt(corr.results.var)
+
+corr.results.avg.frac <- sweep( corr.results.avg,1,total_v-n_vals_worm,"/")
+corr.results.sd.frac <- sweep( corr.results.sd,1,total_v-n_vals_worm,"/")
+
+
+
+
+w.i = 1
+plot(n_vals_worm, as.vector(corr.results.avg.frac[,w.i]) ,xlab="Hard seeds",
+     ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[1],type="l")
+
+
+for(w.i in 2:w.max.index)
+{
+  lines(n_vals_worm, as.vector(corr.results.avg.frac[,w.i]) ,xlab="Hard seeds",
+        ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[w.i])
+}  
+title("varying w.val")
+
+
+
+
+
+
 
 corr.matches.wt.dice.unwt.directed.2<-worm_exp_par_sf_w(num_iter=16,n_vals=n_vals_worm,embed.dim=10,
                                                         weighted.graph=FALSE,diss_measure="C_dice_weighted",symmetrize = FALSE,
