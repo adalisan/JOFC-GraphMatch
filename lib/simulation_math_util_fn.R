@@ -203,7 +203,7 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	# compute the contingency table using those results
 	if (power.comparison.test){
 		## n pairs of matched points
-	    dissim.list.2<- generate.dissim(p = p, w.max.index = 2, d = d, alpha = alpha,
+    dissim.list.2<- generate.dissim(p  =  p, d  =  d, alpha  =  alpha,
 				model = model, old.gauss.model.param = old.gauss.model.param,
 				r = r, n = n, m = m, mc = mc, size = size, q = q, c.val = c.val, 
 				verbose = verbose, pre.scaling = pre.scaling)
@@ -255,6 +255,7 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	}
 	for (l in 1:w.max.index){
 		power.mc[l, ] <- get_power(T0[l,], TA[l,], size)
+    
 	}
 	
 	
@@ -773,7 +774,8 @@ run.reg.cca<-function(D1, D2, D10A,D20,D2A,
 }
 
 
-run.jofc <- function(D1, D2, D10A,D20,D2A,
+run.jofc <- function(D1, D2, 
+		             D10A, D20, D2A,
 		D.oos.1,
 		D.oos.2.null ,
 		D.oos.2.alt ,
@@ -789,6 +791,22 @@ run.jofc <- function(D1, D2, D10A,D20,D2A,
 		w.vals,
 		size,
 		verbose=FALSE)   {
+	
+ # if (dim(D1)[1]  !=   n) {print(paste(dim(D1)[1],"is dim of D1:dimension should be",n))}
+  #if (dim(D2)[1]  !=   n) {print(paste(dim(D2)[1],"is dim of D2:dimension should be",n))}
+ # if (dim(D10A)[1]  !=   (n+m)) {print(paste(dim(D10A)[1],"is dim of D10A:dimension should be",n+m))}
+#  if (dim(D20)[1]  !=   (n+m)) {print(paste(dim(D20)[1],"is dim of D20:dimension should be",n+m))}
+ # if (dim(D2A)[1]  !=   (n+m)) {print(paste(dim(D2A)[1],"is dim of D2A:dimension should be",n+m))}
+  #if (attr(D.oos.1,"Size")  !=   (m))   {print(paste(attr(D.oos.1,"Size"),"is dim of D.oos.1:dimension should be",m))}
+  #if (attr(D.oos.2.null,"Size")  !=   (m))  {print(paste(attr(D.oos.2.null,"Size") ,"is dim of D.oos.2.null:dimension should be",m))}
+#  if (attr(D.oos.2.alt,"Size") !=   (m)) {print(paste(attr(D.oos.2.alt,"Size"),"is dim of D.oos.2.alt:dimension should be",m))}
+#  if ((dim(  L.in.oos.0)[1]  !=   (n)) |  (dim(  L.in.oos.0)[2]  !=   (m))) {
+#    print(paste(dim(L.in.oos.0)[1] , dim(  L.in.oos.0)[2],"is dim of D.oos.2.alt:dimension should be",n,"x",m))
+#    }
+    
+ #   if ((dim(  L.in.oos.A)[1]  !=   (n)) |  (dim(  L.in.oos.A)[2]  !=   (m))) {
+ #     print(paste(dim(L.in.oos.A)[1] , dim(  L.in.oos.A)[2],"is dim of D.oos.2.alt:dimension should be",n,"x",m))}
+	
 	
 	w.max.index <- length(w.vals)
 	T0<-matrix(0,w.max.index,m)
@@ -927,6 +945,7 @@ run.jofc <- function(D1, D2, D10A,D20,D2A,
 			if (verbose) print("dim(X)")
 			if (verbose) print(dim(X))
 			#if (verbose) {print("oos.obs.flag")
+      if (verbose)  print(head(colSums(oos.Weight.mat)))
 			
 			
 			

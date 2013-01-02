@@ -235,19 +235,21 @@ graph2dissimilarity <- function (G,Gp,
 		
 		#print(str(Embed.List))
 		J <-  list()
+		sink("oos.embed.debug.txt")
 		for (Y.embed in Embed.List$Y.embeds){
 			
 			test.samp.size <-  nrow(Y.embed)/2
 			Dist  <-  as.matrix(dist(Y.embed))[1:test.samp.size,(1:test.samp.size)+test.samp.size]
-			sink("debug.txt")
+			
 			print("Y.embed")
 			print(Y.embed)
 			print("Dist")
 			print(Dist)
-			sink()
+			
 			J <-  c(J,list(Dist))
 			
 		}
+		sink()
 		return(J)
 		
 		
