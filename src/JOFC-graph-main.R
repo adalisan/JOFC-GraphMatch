@@ -11,23 +11,23 @@ while (sink.number()>0) {
 #Bitflip experiment
 
 n<-100
-nmc <- 50
+nmc <- 20
 
 pert<- seq(0,0.5,0.1)
 
-n_vals<- c(seq(10,20,5),seq(20,90,10))
+n_vals<- c(seq(10,20,5),seq(30,90,10))
 #n_vals <-c(20,50)
+sep.err.w<- TRUE
 
-
-w.vals<- c(0.01,0.3,0.5,0.8,0.95,0.99)
+w.vals<- c(0.01,0.3,0.8,0.99)
 w.max.index<-length(w.vals)
 
 corr.results.list<- list()
 
 for (mc in 1:nmc){
-	corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=2,
+	corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=4,
 			diss_measure="C_dice_weighted",it.per.G=1,
-			num_v_to_embed_at_a_time=1,w.vals=w.vals)
+			num_v_to_embed_at_a_time=1,w.vals=w.vals,sep.err.w=sep.err.w)
 	corr.results.list<- c(corr.results.list,list(corr.results.mc))
 }
 
@@ -93,6 +93,7 @@ for(ipert in 1:npert)
 title("w.i=2 varying pert.param")
 
 
+if (!run.in.linux) windows()
 
 
 ipert<-2
@@ -105,7 +106,7 @@ for(w.i in 2:w.max.index)
 	points(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[w.i])
 }  
-title("ipert=1 varying w.i")
+title("ipert=2 varying w.i")
 
 
 

@@ -167,7 +167,8 @@ graph2dissimilarity <- function (G,Gp,
 			vert_diss_measure  =  "default",
 			T.param  =  NULL,
 			num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
-			graph.is.weighted=FALSE  )
+			graph.is.weighted=FALSE ,
+			sep.err.w=FALSE)
 	{
 		
 		
@@ -214,7 +215,7 @@ graph2dissimilarity <- function (G,Gp,
    Embed.List <-  Embed.Nodes(D.M,  in.sample.ind ,oos  =  TRUE ,
                               d.start  =  d.dim,
                               wt.equalize =  FALSE,
-                              separability.entries.w  =  FALSE,
+                              separability.entries.w  =  sep.err.w,
                               assume.matched.for.oos   =   FALSE,
                               w.vals  =  w.vals.vec,
                               oos.embed.n.at.a.time  =  num_v_to_embed_at_a_time                             
@@ -226,7 +227,7 @@ graph2dissimilarity <- function (G,Gp,
 				oos=TRUE, 
 				d.start=d.dim,
 				wt.equalize  =  FALSE,
-				separability.entries.w  =  FALSE,
+				separability.entries.w  =  sep.err.w,
 				assume.matched.for.oos   =   FALSE ,
 				w.vals  =  w.vals.vec,
 				oos.embed.n.at.a.time   =  num_v_to_embed_at_a_time,
