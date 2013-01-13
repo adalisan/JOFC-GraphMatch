@@ -10,6 +10,9 @@ while (sink.number()>0) {
 
 #Bitflip experiment
 
+
+run.in.linux<- .Platform$OS.type=="unix"
+
 n<-100
 nmc <- 20
 
@@ -25,10 +28,13 @@ w.max.index<-length(w.vals)
 corr.results.list<- list()
 
 for (mc in 1:nmc){
-	corr.results.mc <- bitflip_MC_rep (pert,n,n_vals,embed.dim=4,
+	corr.results.mc <- try(bitflip_MC_rep (pert,n,n_vals,embed.dim=6,
 			diss_measure="C_dice_weighted",it.per.G=1,
-			num_v_to_embed_at_a_time=1,w.vals=w.vals,sep.err.w=sep.err.w)
-	corr.results.list<- c(corr.results.list,list(corr.results.mc))
+			num_v_to_embed_at_a_time=1,w.vals=w.vals,sep.err.w=sep.err.w))
+     if (!inherits(corr.results.mc , "try-error")){
+		
+	corr.results.list<- c(corr.results.list,list(corr.results.mc))}
+    else {nmc <- nmc-1}
 }
 
 corr.results.unlist<-Reduce("c",corr.results.list,init=list())
@@ -81,7 +87,7 @@ for(ipert in 2:npert)
 	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert])
 }  
-title("w.i=1 varying pert.param")
+
 
 
 w.i=2
@@ -90,7 +96,17 @@ for(ipert in 1:npert)
 	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert],lty=2)
 }  
-title("w.i=2 varying pert.param")
+
+
+
+w.i=3
+for(ipert in 1:npert)
+{
+	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
+			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert],lty=3)
+}  
+title("w.i=1:3 varying pert.param")
+
 
 
 if (!run.in.linux) windows()

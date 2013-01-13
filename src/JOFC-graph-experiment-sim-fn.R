@@ -124,7 +124,7 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
 }
 
 bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure, it.per.G=1, 
-                            num_v_to_embed_at_a_time=NULL,w.vals){
+                            num_v_to_embed_at_a_time=NULL,w.vals,sep.err.w=FALSE){
   require(optmatch)
   require(igraph)
   require(MASS)
@@ -151,7 +151,7 @@ bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure, it.per.G=1,
     corr.matches<-run.experiment.JOFC(G,Gp,n_vals,num_iter=1,
                                       embed.dim=embed.dim, diss_measure=diss_measure,w.vals=w.vals,
                                       num_v_to_embed_at_a_time= num_v_to_embed_at_a_time,
-                                      return.list=TRUE)
+                                      return.list=TRUE,sep.err.w=sep.err.w)
     
     corr.match.array.mc[,ipert,] <- corr.matches[[it]]
   }
