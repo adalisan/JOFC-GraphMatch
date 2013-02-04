@@ -41,7 +41,7 @@ corr.results.unlist<-Reduce("c",corr.results.list,init=list())
 corr.results.avg<-Reduce("+",corr.results.unlist)/nmc
 corr.results.var<-lapply(corr.results.unlist,function(x){(x-corr.results.avg)^2})
 corr.results.var<-Reduce("+",corr.results.var)/nmc
-corr.results.var<-corr.results.var/sqrt(nmc)
+corr.results.var<-corr.results.var/(nmc)
 corr.results.sd<-sqrt(corr.results.var)
 
 corr.results.avg.frac <- sweep( corr.results.avg,1,n-n_vals,"/")
