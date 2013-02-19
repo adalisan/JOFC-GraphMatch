@@ -589,7 +589,7 @@ Embed.Nodes.to.Match.many <-function(D.Mats,
 			if (dim(init.conf)[2]< embed.dim){
 				embed.dim <- dim(init.conf)[2]
 				full.seed.match<-TRUE
-				X.embeds<-list(init.conf)
+				X.embeds<-list(a=init.conf)
 				break
 			}
 		}
@@ -849,7 +849,14 @@ present.many<-function(M,corr.list){
 		precision    <- sum(true.matches)/length(true.matches) #what proportion of the matches found are correct
 		recall       <- sum(true.matches)/length(corr.i[[1]]) #what proportion of the true matches are found
 		p.r<-(precision+recall)
-		F.meas<-0
+		if (is.null(p.r)|is.nan(p.r)|is.na(p.r)){
+		  print(true.matches)
+      print(precision)
+      print(recall)
+		}
+    
+    F.meas<-0
+    
 		if(p.r!=0)
 			F.meas<- 2*precision*recall/p.r
 		

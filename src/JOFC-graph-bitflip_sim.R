@@ -50,3 +50,57 @@ corr.results.sd.frac <- sweep( corr.results.sd,1,n-n_vals,"/")
 
 
 save.image(paste("JOFC-graph_bitflip_sim_100_",date(),".Rdata"))
+
+
+
+
+colors.vec <- c("red","green","aquamarine","purple",
+		"darkblue","salmon","rosybrown","magenta","orange")
+colors.vec[3]<-"gold4"
+colors.vec[2]<-"darkblue"
+colors.vec[4]<-"darkorange4"
+colors.vec[9]<-"red"
+colors.vec.len<-length(colors.vec)
+
+require(RColorBrewer)
+colors.vec.brew<- brewer.pal(colors.vec.len,"YlOrRd")
+
+colors.vec.brew[colors.vec.len+1]<-"cornflowerblue"
+colors.vec.brew[colors.vec.len+2]<-"azure3"
+colors.vec.brew[colors.vec.len+3]<-"cyan"
+
+
+
+
+
+colors.vec.len <- length(colors.vec.brew)
+colors.vec.brew[(colors.vec.len-2):colors.vec.len] <- brewer.pal(3,"Set3")
+#palette("YlOrRd")
+
+
+
+
+w.i = 1
+plot(n_vals, as.vector(corr.results.avg.frac[,1,w.i]) ,xlab="Hard seeds",
+		ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[1],type="l")
+
+npert<-length(pert)
+for(ipert in 2:npert)
+{
+	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
+			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert])
+}  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
