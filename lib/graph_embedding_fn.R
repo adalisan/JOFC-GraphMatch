@@ -64,8 +64,8 @@ graph2dissimilarity <- function (G,Gp,
 		D.1 <-  shortest.paths(Graph.1)
 		D.2 <-  shortest.paths(Graph.2)
 	} else if (vert_diss_measure == "diffusion"){
-		D.1 <-  diff.dist.fun(G,T.param)
-		D.2 <-  diff.dist.fun(Gp,T.param)	
+		D.1 <-  diff.dist.fun(G,T.param,ifelse(graph.mode=="directed",TRUE,FALSE))
+		D.2 <-  diff.dist.fun(Gp,T.param,ifelse(graph.mode=="directed",TRUE,FALSE))	
 	} else if (vert_diss_measure == 'ECT'){
 		if (any(!is.finite(G))) {
 			print(G(!is.finite(G)))
@@ -78,25 +78,26 @@ graph2dissimilarity <- function (G,Gp,
 	} else if (vert_diss_measure == 'ell1'){
 		D.1 <-   as.matrix(dist(G,'manhattan'))
 		D.2 <-   as.matrix(dist(Gp,'manhattan'))
-	} else if (vert_diss_measure == 'jaccard'){
-		D.1  <-   similarity.jaccard( Graph.1)
-		D.2  <-   similarity.jaccard( Graph.2)
+
 		
-		D.1  <-   2- 2*D.1
-		D.2  <-   2- 2*D.2
+	} else if (vert_diss_measure == 'jaccard'){
+	  D.1  <-   similarity.jaccard( Graph.1)
+	  D.2  <-   similarity.jaccard( Graph.2)
+	  
+	  D.1  <-  tau.e(D.1)
+	  D.2  <-   tau.e(D.2)
 	} else if (vert_diss_measure == 'dice'){
-		D.1  <-   similarity.dice( Graph.1)
-		D.2  <-   similarity.dice( Graph.2)
-		D.1  <-   2- 2*D.1
-		D.2  <-   2- 2*D.2
+	  D.1  <-   similarity.dice( Graph.1)
+	  D.2  <-   similarity.dice( Graph.2)
+	  D.1  <-   tau.e(D.1)
+	  D.2  <-   tau.e(D.2)
 	}  else if (vert_diss_measure == 'invlogweighted'){
-		D.1  <-   similarity.invlogweighted( Graph.1)
-		D.2  <-   similarity.invlogweighted( Graph.2)
-		D.1  <-   2- 2*D.1
-		D.2  <-   2- 2*D.2
-	} else if (vert_diss_measure == 'exp_minus'){
-		D.1 <- exp(-1*G/2)
-		D.2 <- exp(-1*Gp/2)    
+    #Adamic-Adar, similarity of edges weighted by 1/log(deg(a_i)) where a_i is the 
+    #
+	  D.1  <-   similarity.invlogweighted( Graph.1)
+	  D.2  <-   similarity.invlogweighted( Graph.2)
+	  D.1  <-   tau.e(D.1)
+	  D.2  <-   tau.e(D.2)
 	} else if (vert_diss_measure == 'C_dice_weighted'){
 		
 		
@@ -112,6 +113,26 @@ graph2dissimilarity <- function (G,Gp,
 			D.2 <- C_dice_weighted(Gp)
 		}
 	}
+	else if (vert_diss_measure == 'hybrid_DICE_SP'){
+    
+	  if (graph.mode=="directed"){
+	    
+	    D.1 <- C_dice_weighted_SP_hybrid_in_out(G,Graph.1)
+	    D.2 <- C_dice_weighted_SP_hybrid_in_out(Gp,Graph.2)
+	    
+	  }
+	  else{
+	    
+	    D.1 <- C_dice_weighted_SP_hybrid(G,Graph.1)
+	    D.2 <- C_dice_weighted_SP_hybrid(Gp,Graph.2)
+	  }
+    
+   
+    
+    
+	}
+  
+  
 		# In case dissimilarities blow up for diss. measure, put a limit on max 
 		# value for diss.
 		
@@ -152,7 +173,7 @@ graph2dissimilarity <- function (G,Gp,
 		
 		
 		D.M <-   rbind(cbind(D.1,D.w),
-				cbind(D.w.p,D.2)
+			          	cbind(D.w.p,D.2)
 		)
 		return(D.M)
 	}
@@ -168,7 +189,7 @@ graph2dissimilarity <- function (G,Gp,
 			T.param  =  NULL,
 			num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
 			graph.is.weighted=FALSE ,
-			sep.err.w=FALSE)
+			sep.err.w=TRUE,   legacy.func= TRUE)
 	{
 		
 		
@@ -207,7 +228,7 @@ graph2dissimilarity <- function (G,Gp,
 		#num_v_to_embed_at_a_time   <-   sum(!in.sample.ind)
 		# print("num_v_to_embed_at_a_time")
 		# print(num_v_to_embed_at_a_time)
-	legacy.func<- TRUE
+
 	
 	
 	
@@ -236,21 +257,21 @@ graph2dissimilarity <- function (G,Gp,
 		
 		#print(str(Embed.List))
 		J <-  list()
-		sink("oos.embed.debug.txt")
+		#sink("oos.embed.debug.txt")
 		for (Y.embed in Embed.List$Y.embeds){
 			
 			test.samp.size <-  nrow(Y.embed)/2
 			Dist  <-  as.matrix(dist(Y.embed))[1:test.samp.size,(1:test.samp.size)+test.samp.size]
 			
 			print("Y.embed")
-			print(Y.embed)
+			print(str(Y.embed))
 			print("Dist")
-			print(Dist)
+			print(str(Dist))
 			
 			J <-  c(J,list(Dist))
 			
 		}
-		sink()
+		#sink()
 		return(J)
 		
 		
@@ -479,7 +500,7 @@ graph2dissimilarity <- function (G,Gp,
 			oos, 
 			d.start,
 			wt.equalize  =  FALSE,
-			separability.entries.w  =  TRUE,
+			separability.entries.w  =  FALSE,
 			assume.matched.for.oos   =   FALSE ,
 			w.vals  =  0.95,
 			oos.embed.n.at.a.time   =   sum(!in.sample.ind)/2,
@@ -509,7 +530,7 @@ graph2dissimilarity <- function (G,Gp,
 		
 		# Embed in-sample using different weight matrices (differentw values)
 		
-		dim.increment<-5
+		dim.increment<-10
 		
 		init.conf  <-  NULL
 		
@@ -719,7 +740,7 @@ graph2dissimilarity <- function (G,Gp,
 			separability.entries.w  =  FALSE,
 			assume.matched.for.oos   =   FALSE ,
 			w.vals  =  0.8,
-			oos.embed.n.at.a.time   =  	oos.embed.n.at.a.time ,
+			oos.embed.n.at.a.time   =   sum(!in.sample.ind)/2,
 			mds.init.method="gower") {
 		min.correct.frac.for.full.seed<-0.95
 		oos.use.imputed <-   TRUE
@@ -873,7 +894,7 @@ graph2dissimilarity <- function (G,Gp,
 		
     matching <- 0
     #Number of dimensions to increase for embedding dimension search
-		dim.increment<-3
+		dim.increment<-5
 		Y.embeds <-  list()
 		oos.use.imputed <-   FALSE
 		w.max.index <-  length(w.vals)
@@ -911,14 +932,15 @@ graph2dissimilarity <- function (G,Gp,
 		embed.dim  <-  d.start
 		prevTrueMatch = -1
 		True.match.last.memory <- rep(-1,3)
-    embed.dim<-embed.dim-dim.increment
+        embed.dim<-embed.dim-dim.increment
 		
 		while  (!full.seed.match) {
 			X.embeds.f <- list()
 			embed.dim   <-   embed.dim + dim.increment
 			
 			X.embeds.f <-  JOFC.Insample.Embed(D.in,embed.dim,
-					w.val.l,sep.err.w=separability.entries.w ,
+					w.val.l,
+					sep.err.w=separability.entries.w ,
 					init.conf  =  init.conf,
 					wt.equalize  =  wt.equalize)
 			# if (inherits(X.embeds,"try-error")) {
@@ -974,13 +996,29 @@ graph2dissimilarity <- function (G,Gp,
 			embed.dim   <-   embed.dim + dim.increment
 			
 			X.embeds <-  try(JOFC.Insample.Embed(D.in,ndimens=embed.dim,
-							w.val.l,sep.err.w=separability.entries.w ,
+							w.val.l,
+							sep.err.w=separability.entries.w ,
 							init.conf  =  init.conf,
 							wt.equalize  =  wt.equalize))
 			if (inherits(X.embeds,"try-error")) {
 				print('Unable to embed via smacof')
-				embed.dim<-embed.dim-dim.increment
-				X.embeds<-list(cmdscale(D.in, k=embed.dim))
+				embed.dim <- embed.dim-dim.increment
+        D.in.v<- as.vector(D.in)
+                            D.impute <- median(D.in.v[!is.na(D.in.v)])
+				if (!is.na(D.impute)&&(!is.null(D.impute)))
+                               D.in[is.na(D.in)]<- D.impute
+				if (any(is.na(D.in))) {
+					#sink("D.in.na.txt")
+					   print(str(D.in))
+					#sink()
+
+				}  
+				# isoMDS(d, y = cmdscale(d, k), k = 2, maxit = 50, trace = TRUE,       tol = 1e-3, p = 2)
+				X.cmds<- cmdscale(D.in, k=embed.dim,eig=TRUE)
+				embed.dim <- sum(X.cmds$eig>0)
+				
+
+				X.embeds<-list(a=X.cmds$points[,1:embed.dim])
 				
 				full.seed.match   <-    TRUE
 			}
@@ -995,6 +1033,7 @@ graph2dissimilarity <- function (G,Gp,
 			X  <-   X.embeds[[1]]
 			dim.X <- dim(X)
 			Y.0  <-   matrix(-1,length(in.sample.ind),dim.X[2])
+			print("dim(X) dim(Y0) and sum(in.sample.ind))")
 			print(dim(X))
 			print(dim(Y.0))
 			print(sum(in.sample.ind))
@@ -1152,7 +1191,25 @@ graph2dissimilarity <- function (G,Gp,
 			if (inherits(X.embeds,"try-error")) {
 				print('Unable to embed via smacof')
 				embed.dim<-embed.dim-dim.increment
-				X.embeds<-list(cmdscale(D.in, k=embed.dim))
+				D.in.v<-as.vector(D.in)
+                            D.impute <- median(D.in.v[!is.na(D.in.v)])
+				if (!is.na(D.impute)&&(!is.null(D.impute)))
+                               D.in[is.na(D.in)]<- D.impute
+				if (any(is.na(D.in))) {
+					sink("D.in.na.txt")
+					   print(str(D.in))
+					sink()
+
+				}  
+
+
+
+                            # isoMDS(d, y = cmdscale(d, k), k = 2, maxit = 50, trace = TRUE,       tol = 1e-3, p = 2)
+				X.cmds<- cmdscale(D.in, k=embed.dim, eig=TRUE)
+				embed.dim <- sum(X.cmds$eig>0)
+                            
+				X.embeds<-list(a=X.cmds$points[,1:embed.dim])
+
 				
 				full.seed.match   <-    TRUE
 			}
@@ -1167,8 +1224,8 @@ graph2dissimilarity <- function (G,Gp,
 			X  <-   X.embeds[[1]]
 			dim.X <- dim(X)
 			Y.0  <-   matrix(-1,length(in.sample.ind),dim.X[2])
-			sink("graph_embedding.txt")
-			print("Embed.Nodes.one.atat")
+			sink("In_out_sample_graph_embedding.txt")
+			print("Embed.Nodes.one.atat: dim(X),dim(Y.0),sum(in.sample.ind)")
 			print(dim(X))
 			print(dim(Y.0))
 			print(sum(in.sample.ind))
@@ -1418,9 +1475,9 @@ graph2dissimilarity <- function (G,Gp,
 	}
 	
 	
-	diff.dist.fun <-  function(A,T.diff,dissimilarity=FALSE){
+	diff.dist.fun <-  function(A,T.diff,dissimilarity=FALSE,directed=FALSE){
 		P <-  transition.matrix(A,dissimilarity  =  dissimilarity)
-		D <-  diffusion.distance(P, T.diff, directed   =   FALSE)
+		D <-  diffusion.distance(P, T.diff, directed   =   directed)
 		D
 	}
 	
@@ -1441,6 +1498,30 @@ graph2dissimilarity <- function (G,Gp,
 		diag(D)<-0
 		return(5*D)
 	}
+
+C_dice_weighted_SP_hybrid <- function(W,Graph){
+  n<-nrow(W)
+  diag(W)<-0
+  D<- matrix(0,n,n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      com.neigh_ij <- (W[i,]>0)&(W[j,]>0)
+      r_ij= sum((W[i,]* (W[i,]>0 &  W[j,]==0)))+ sum((W[j,]* (W[i,]==0 &  W[j,]>0)))-2*W[i,j]
+      a_ij <- sum((W[i,]+W[j,])*(com.neigh_ij))+2*W[i,j]
+      #t <- ifelse(W[i,j]==0,1,0)
+      if ((sum(com.neigh_ij)>0)|(W[i,j]>0))
+          D[i,j] <- (r_ij+2*(W[i,j]==0))/(r_ij+a_ij+2)
+      else{
+        D[i,j] <- shortest.paths(Graph,v=i,to=j)
+      }
+    }
+    
+  }
+  diag(D)<-0
+  return(5*D)
+}
+
+
 	
 	C_dice_weighted_in_out <- function(W){
 		n<-nrow(W)
@@ -1471,7 +1552,47 @@ graph2dissimilarity <- function (G,Gp,
 		diag(D)<-0
 		return(5*D)
 	}
-	
+
+C_dice_weighted_SP_hybrid_in_out <- function(W,Graph){
+  n<-nrow(W)
+  diag(W)<-0
+  D.in<- matrix(0,n,n)
+  Com.neigh <- matrix(FALSE,n,n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      com.neigh_ij <- (W[,i]>0)&(W[,j]>0)
+      r_ij= sum((W[,i]* (W[,i]>0 &  W[,j]==0)))+
+        sum((W[,j]* (W[,i]==0 &  W[,j]>0)))-W[i,j]-W[j,i]
+      a_ij <- sum((W[,i]+W[,j])*(com.neigh_ij))+W[i,j]+W[j,i]
+      #t <- ifelse(W[i,j]==0,1,0)
+      D.in[i,j] <- (r_ij+(W[i,j]==0)+(W[j,i]==0))/(r_ij+a_ij+2)
+      if (sum(com.neigh_ij >0)) {Com.neigh[i,j]<-TRUE}
+    }
+    
+  }
+  D.out<- matrix(0,n,n)
+  for (i in 1:n) {
+    for (j in 1:n) {
+      com.neigh_ij <- (W[i,]>0)&(W[j,]>0)
+      r_ij= sum((W[i,]* (W[i,]>0 &  W[j,]==0)))+ sum((W[j,]* (W[i,]==0 &  W[j,]>0)))-W[i,j]-W[j,i]
+      a_ij <- sum((W[i,]+W[j,])*(com.neigh_ij))+W[i,j]+W[j,i]
+      #t <- ifelse(W[i,j]==0,1,0)
+      D.out[i,j] <- (r_ij+(W[i,j]==0)+(W[j,i]==0))/(r_ij+a_ij+2)
+      if (sum(com.neigh_ij >0)) {Com.neigh[i,j]<-TRUE}
+      if ((!Com.neigh[i,j])&(W[i,j]==0)&(W[j,i]==0)){
+        D.in[i,j] <- D.out[i,j]<- shortest.paths(Graph,v=i,to=j)
+      }
+      
+      
+      
+    }
+    
+  }
+
+  D <- (D.in+D.out)/2
+  diag(D)<-0
+  return(5*D)
+}
 	
 	
 	ectime<-function(W){
@@ -1498,8 +1619,7 @@ graph2dissimilarity <- function (G,Gp,
 			print(dim(t))
 			stop()
 		}
-		
-		
+				
 		if (any(!is.finite(nL))) {
 			print("nL invalid values")
 			print(str(nL))

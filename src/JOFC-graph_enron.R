@@ -16,14 +16,15 @@ run.in.linux<- .Platform$OS.type=="unix"
 
 
 
-sep.err.w<- TRUE
 
 
 w.vals<-c(0.2,0.8,0.99)
-w.vals<-0.95
+w.vals<-0.8
+embed.dim.start<- 8
 w.max.index<-length(w.vals)
 corr.matches.e <- 
-		enron_exp_par_sf_w(num_iter,n_vals_enron,embed.dim=3,weighted.graph=FALSE,
+		enron_exp_par_sf_w(num_iter,n_vals_enron,
+embed.dim=embed.dim.start,weighted.graph=FALSE,
 				diss_measure="C_dice_weighted",symmetrize=TRUE,
 				preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE) 
 
@@ -58,6 +59,7 @@ corr.results.avg.undir<- corr.results.avg
 corr.results.sd.undir<- corr.results.sd
 
 
+save.image(paste("JOFC-graph_enron_DICE",date(),".Rdata"))
 colors.vec<-rainbow(w.max.index)
 
 w.i = 1
@@ -80,7 +82,7 @@ rm(AAA)
 
 
 corr.matches.e.dir <- 
-		enron_exp_par_sf_w(num_iter,n_vals_enron,embed.dim=3,weighted.graph=FALSE,
+		enron_exp_par_sf_w(num_iter,n_vals_enron,embed.dim=embed.dim.start,weighted.graph=FALSE,
 				diss_measure="C_dice_weighted",symmetrize=FALSE,
 				preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE) 
 
@@ -96,33 +98,33 @@ corr.results.sd.dir<-sqrt(corr.results.var.dir)
 corr.results.avg.frac.dir <- sweep( corr.results.avg.dir,1,total_v-n_vals_enron,"/")
 corr.results.sd.frac.dir <- sweep( corr.results.sd.dir,1,total_v-n_vals_enron,"/")
 
-save.image(paste("JOFC-graph_enron",date(),".Rdata"))
+save.image(paste("JOFC-graph_enron_C_dice_dir_undir",date(),".Rdata")) 
 
 
 w.i = 1
-lines(n_vals_enron, as.vector(corr.results.avg.frac[,w.i]) ,xlab="Hard seeds",
+lines(n_vals_enron, as.vector(corr.results.avg.frac.dir[,w.i]) ,xlab="Hard seeds",
 		ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[1],type="l",lty=2)
 
 if (w.i>1){
 for(w.i in 2:w.max.index)
 {
-	lines(n_vals_enron, as.vector(corr.results.avg.frac[,w.i]) ,xlab="Hard seeds",
+	lines(n_vals_enron, as.vector(corr.results.avg.frac.dir[,w.i]) ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[w.i])
 }  
 }
-title("Directed Enron G")
+title("Directed Enron Graph")
+
 
 
 
 
 library(R.matlab)
 
-R.matlab::writeMat("JOFC_enron.mat",JOFC_corr_enron_undir=corr.results.avg.undir, 
+R.matlab::writeMat("JOFC_enron_dice.mat",
+JOFC_corr_enron_undir=corr.results.avg.undir, 
                    JOFC_corr_enron_dir=corr.results.avg.dir, 
 			JOFC_corr_enron_sd_undir=corr.results.sd.undir, 
                    JOFC_corr_enron_sd_dir=corr.results.sd.dir,n_vals_enron=n_vals_enron,total_v=total_v)
-
-
 
 
 

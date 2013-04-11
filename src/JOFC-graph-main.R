@@ -16,7 +16,7 @@ run.in.linux<- .Platform$OS.type=="unix"
 n<-100
 nmc <- 20
 
-pert<- seq(0,0.5,0.1)
+pert<- seq(0,0.2,0.1)
 
 n_vals<- c(seq(10,20,5),seq(30,90,10))
 #n_vals <-c(20,50)
@@ -29,7 +29,7 @@ corr.results.list<- list()
 
 for (mc in 1:nmc){
 	corr.results.mc <- try(bitflip_MC_rep (pert,n,n_vals,embed.dim=6,
-			diss_measure="C_dice_weighted",it.per.G=1,
+			diss_measure="default",it.per.G=1,
 			num_v_to_embed_at_a_time=1,w.vals=w.vals,sep.err.w=sep.err.w))
      if (!inherits(corr.results.mc , "try-error")){
 		
@@ -87,6 +87,44 @@ for(ipert in 2:npert)
 	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert])
 }  
+if (0){
+  
+  w.i <- 1
+proj.dataframe<-list()
+
+corr.results.lf<-data.frame()
+for (l.i in 1:length(corr.results.unlist)){
+
+corr.results.avg.frac.w.i<- drop(corr.results.unlist[[l.i]][,,w.i])
+corr.results.avg.frac.w.i<- sweep( corr.results.avg.frac.w.i,1,n-n_vals,"/")
+#corr.results.avg.frac.w.i<-cbind(n_vals,corr.results.avg.frac.w.i)
+colnames(corr.results.avg.frac.w.i) <-c(pert)
+corr.results.l.i<-melt(corr.results.avg.frac.w.i)
+corr.results.l.i$Var2<-as.factor(corr.results.l.i$Var2)
+corr.results.l.i<-cbind(corr.results.l.i,n_vals)
+corr.results.lf <-rbind(corr.results.lf ,corr.results.l.i)
+}
+names(corr.results.lf)<- c("Match ratio","rho","value","n_vals")
+corr.summ<-summarySE(data=corr.results.lf,measurevar="value",groupvar=c("pert","n_vals"))
+
+
+
+ggplot(corr.summ, aes(x=n_vals, y=value, colour=pert)) + 
+  geom_errorbar(aes(ymin=value-ci, ymax=value+ci),size=1, width=6) +
+  geom_point(size=2)+geom_line(size=1.2)+theme_minimal()+theme(text=element_text(size=22)) +
+    labs(title="JOFC",x=expression(m),y=((expression(delta^{(m)}))))+scale_x_continuous(breaks=seq(0,300,25)) +
+    scale_y_continuous(breaks=seq(0,1,.2)) +
+           guides(colour=guide_legend( title =expression(rho),title.hjust=1,title.vjust=-1,label.hjust=1))
+
+
+  
+
+  ggplot(corr.summ.FAQ, aes(x=m, y=value, colour=rho)) + 
+         geom_errorbar(aes(ymin=value-ci, ymax=value+ci),size=1, width=6) +
+         geom_point(size=2)+geom_line(size=1.2)+theme_minimal() +theme(text=element_text(size=22)) +
+    labs(title="FAQ",x=expression(m),y=((expression(delta^{(m)}))))+scale_x_continuous(breaks=seq(0,300,25)) +
+    scale_y_continuous(breaks=seq(0,1,.2)) +
+    guides(colour=guide_legend( title =expression(rho),title.hjust=1,title.vjust=-1,label.hjust=1))
 
 
 

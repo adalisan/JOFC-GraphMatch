@@ -98,8 +98,9 @@ graph2dissimilarity.many <- function (G,Gp,corr.list,
 		graph.mode,
 		vert_diss_measure,
 		T.param,
+		weighted.g
 
-                                      weighted.g) {
+) {
 	n.1<-nrow(G)
 	n.2<-nrow(Gp)
 	in.samp.ind.1 <- which(in.sample.ind.1)
@@ -797,6 +798,7 @@ solveMarriage.many<- function(Dist,max.match){
 
 present.many<-function(M,corr.list){
 	
+	
 	M.levels<-levels(M)
 	test.m.2<-length(M.levels)
 	
@@ -812,6 +814,8 @@ present.many<-function(M,corr.list){
 		
 	}
 	match.i <- 0
+	total.true.matches <- 0
+	total.found.matches<- 0 
 	for (match.label in M.levels){
 		match.i <- match.i + 1
 		
@@ -848,6 +852,7 @@ present.many<-function(M,corr.list){
 		true.matches <- matches.indices.i%in%corr.i[[1]] #which of the matches found are in the list of true matches 
 		precision    <- sum(true.matches)/length(true.matches) #what proportion of the matches found are correct
 		recall       <- sum(true.matches)/length(corr.i[[1]]) #what proportion of the true matches are found
+           
 		p.r<-(precision+recall)
 		if (is.null(p.r)|is.nan(p.r)|is.na(p.r)){
 		  print(true.matches)
@@ -866,9 +871,11 @@ present.many<-function(M,corr.list){
 		names(recall.list)[match.i] <- test.2.index
 		F.meas.list[match.i]<-F.meas
 		names(F.meas.list)[match.i] <- test.2.index
+		total.true.matches <- total.true.matches  + sum(true.matches)
+		total.found.matches <- total.found.matches+ length(true.matches)
 	}
 	
-	return(list(P=precision.list,R=recall.list,F=F.meas.list))	
+	return(list(P=precision.list,R=recall.list,F=F.meas.list,True.Match=total.true.matches,True.Match.Ratio=total.true.matches/total.found.matches))	
 }
 
 

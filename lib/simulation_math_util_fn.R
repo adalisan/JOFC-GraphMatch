@@ -62,7 +62,7 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	#between PoM and JOFC with smallest w
 	min.stress.for.w.val = array(0,dim=c(w.max.index))   #minimum stress value for  smacof algorithm
 	pom.stress <- 0
-	
+  auc.meas <-rep(0,w.max.index)
 	
 	T0.best.w <- matrix(0,2,m)    #Test statistics for JOFC (comparison of w=0.5 with optimal w*
 	TA.best.w <- matrix(0,2,m)
@@ -255,9 +255,17 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 	}
 	for (l in 1:w.max.index){
 		power.mc[l, ] <- get_power(T0[l,], TA[l,], size)
-    
+	auc.meas[l] <- get_AUC(T0[l,], TA[l,])  
 	}
+  sink(paste("auc.meas",as.integer(round(10000*runif(1,0,1))), ".txt"))
+       print(auc.meas)
+       n1<-length(Tnull<-T0[1,])
+       n2<-length(Talt<-TA[1,])
 	
+       k<-outer(Talt,Tnull,'-')
+       auc<- (sum(k>0)+0.5*sum(k==0))/(n1*n2)
+       print(auc)
+       sink()
 	
 	
 	
@@ -270,7 +278,9 @@ run.mc.replicate<-function(model,p, r, q, c.val,
 			FidComm.Terms=FidComm.Terms,	FidComm.Sum.Terms = FidComm.Sum.Terms,
 			F.to.C.ratio = F.to.C.ratio, wtF.to.C.ratio=wtF.to.C.ratio,
 			F.bar.to.C.bar.ratio= F.bar.to.C.bar.ratio,
-			optim.power=dissim.list$optim.power,best.w =rival.w
+       optim.power = dissim.list$optim.power,
+	   best.w  = rival.w,
+	   auc.meas=auc.meas
 	)
 	
 }
@@ -806,8 +816,8 @@ run.jofc <- function(D1, D2,
     
  #   if ((dim(  L.in.oos.A)[1]  !=   (n)) |  (dim(  L.in.oos.A)[2]  !=   (m))) {
  #     print(paste(dim(L.in.oos.A)[1] , dim(  L.in.oos.A)[2],"is dim of D.oos.2.alt:dimension should be",n,"x",m))}
-	
-	
+	if (verbose) sink("JOFC.log.txt")
+	if (verbose) print("run.jofc run start")
 	w.max.index <- length(w.vals)
 	T0<-matrix(0,w.max.index,m)
 	TA<-matrix(0,w.max.index,m)
@@ -955,6 +965,7 @@ run.jofc <- function(D1, D2,
 			omnibus.oos.D.0[is.na(omnibus.oos.D.0)]<-1
 			omnibus.oos.D.A[is.na(omnibus.oos.D.A)]<-1
 			if (verbose) print("JOFC null omnibus OOS embedding \n")
+       print(paste("w is ",w.val.l))
 #if (profile.mode)			Rprof("profile-oosIM.out",append=TRUE)
 			Y.0t<-oosIM(D=omnibus.oos.D.0,
 					X=X,
@@ -988,6 +999,8 @@ run.jofc <- function(D1, D2,
 		}
 	}
 	
+  if (verbose) print("run.jofc  ended")
+   if (verbose) sink()
 	return(list(T0=T0,TA=TA,
 					Fid.Err.Term.1=Fid.Err.Term.1 ,		Fid.Err.Term.2=Fid.Err.Term.2,  Comm.Err.Term=Comm.Err.Term  ,  	  		
 					Fid.Err.Sum.Term.1 = Fid.Err.Sum.Term.1 ,		Fid.Err.Sum.Term.2 = Fid.Err.Sum.Term.2 ,		Comm.Err.Sum.Term  =Comm.Err.Sum.Term  , 
@@ -1159,15 +1172,20 @@ JOFC.Insample.Embed <-function(D,ndimens,w.vals,sep.err.w,init.conf,wt.equalize)
 	
 	half.n<- n/2
 	for (w in w.vals){
+  sink(paste(w,"insample_embed.txt"))
 		Weight.Mat<-w.val.to.W.mat(w,n,sep.err.w,wt.equalize)
 		Weight.Mat[is.na(D)]<-0
 		D[is.na(D)] <-1
-		
+    print(w)
+    print(head(Weight.Mat))
+    print(head(D))
 		new.embed <- smacofM(D,ndim=ndimens    ,	W=Weight.Mat        ,
 				init    = init.conf,
 				verbose = FALSE,
 				itmax   = 1000,
 				eps     = 1e-6)
+    
+    sink()
 		smacof.embed<-c(smacof.embed,list(new.embed ))
 		stress.mat <- (as.dist(D) - dist(new.embed))^2
 		
@@ -1603,7 +1621,8 @@ plot.ROC.with.CI<-function(plot.roc.points,plot.title,plot.col,conf.int=TRUE,add
 	par(lty=1)		
 }
 
-plot.graph.with.CI<-function(plot.roc.points,plot.title,plot.col,conf.int=TRUE,add=FALSE,fp.points=seq(0,1,0.01),customx.labels=NULL,customy.labels=NULL,ispowercurve=TRUE){
+plot.graph.with.CI<-function(plot.roc.points,plot.title,plot.col,conf.int = TRUE,add = FALSE,fp.points = seq(0,1,0.01),
+                             customx.labels = NULL,customy.labels = NULL,ispowercurve = TRUE,...){
 	
 	standardx.axis <- FALSE
 	standardy.axis <- FALSE
@@ -1624,12 +1643,12 @@ plot.graph.with.CI<-function(plot.roc.points,plot.title,plot.col,conf.int=TRUE,a
 	if (add){
 		lines(x=fp.points,y= y.points,main=plot.title,
 				col=plot.col,xaxt=ifelse(standardx.axis,"s","n"),
-				yaxt=ifelse(standardy.axis,"s","n"), lwd=2.5,xlab="",ylab="")
+          yaxt = ifelse(standardy.axis,"s","n"), lwd = 2.5)
 		
 	}
 	else{
 		plot(x=fp.points,y= y.points,main=plot.title,xaxt=ifelse(standardx.axis,"s","n"),
-				yaxt=ifelse(standardy.axis,"s","n"), col=plot.col,type='l',lwd=2.5,xlab="",ylab="")
+         yaxt = ifelse(standardy.axis,"s","n"), col = plot.col,type = 'l',lwd = 2.5,...)
 	}
 	
 	if (!standardx.axis)
@@ -1897,10 +1916,39 @@ The.mode <- function(x, show_all_modes = F)
 	} 
 } 
 
+	get_AUC <- function(T0_stats,TA_stats) {
+		n1<-length(T0_stats)
+		n2<-length(TA_stats)
+
+		#diff_stats<-outer(TA_stats,T0_stats,'-')
+		#auc.estim<- (sum(diff_stats>0)+0.5*sum(diff_stats==0))/(n1*n2)
+
+		library(caTools)
+		auc.estim = colAUC(c(T0_stats,TA_stats),rep(c(0,1),each=c(n1,n2)), plotROC=FALSE, alg=c("ROC"))
+
+		return(auc.estim)
+
+	}	
+
+get_soft_AUC <- function(T0_stats,TA_stats) {
+  n1<-length(T0_stats)
+  n2<-length(TA_stats)
+  
+  diff_stats<-outer(TA_stats,T0_stats,'-')
+  auc.estim<- sum(plogis(diff_stats,scale=2*min(abs(diff_stats))) )/(n1*n2)
+  return(auc.estim)
+  
+}
 
 
 
-
+## Summarizes data.
+## Gives count, mean, standard deviation, standard error of the mean, and confidence interval (default 95%).
+##   data: a data frame.
+##   measurevar: the name of a column that contains the variable to be summariezed
+##   groupvars: a vector containing names of columns that contain grouping variables
+##   na.rm: a boolean that indicates whether to ignore NA's
+##   conf.interval: the percent range of the confidence interval (default is 95%)
 summarySE <- function(data=NULL, measurevar, groupvars=NULL, na.rm=FALSE,
 		conf.interval=.95, .drop=TRUE) {
 	require(plyr)

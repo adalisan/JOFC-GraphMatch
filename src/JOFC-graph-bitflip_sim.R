@@ -81,14 +81,25 @@ colors.vec.brew[(colors.vec.len-2):colors.vec.len] <- brewer.pal(3,"Set3")
 
 
 w.i = 1
-plot(n_vals, as.vector(corr.results.avg.frac[,1,w.i]) ,xlab="Hard seeds",
+y_vals<- as.vector(corr.results.avg.frac[,1,w.i])
+plot(n_vals,y_vals ,xlab="Hard seeds",
 		ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[1],type="l")
+lcl<-y_vals-  2*as.vector(corr.results.sd.frac[,1,w.i])
+ucl<-y_vals+  2*as.vector(corr.results.sd.frac[,1,w.i])
+arrows(n_vals,ucl,n_vals,lcl,length = .05,angle = 90,code = 3, lty = 3,col = colors.vec[1])
 
 npert<-length(pert)
 for(ipert in 2:npert)
 {
-	lines(n_vals, as.vector(corr.results.avg.frac[,ipert,w.i]) ,xlab="Hard seeds",
+  y_vals<- as.vector(corr.results.avg.frac[,ipert,w.i])
+	lines(n_vals, y_vals ,xlab="Hard seeds",
 			ylab="Fraction of  correct matches",ylim=c(0,1),col=colors.vec[ipert])
+
+  lcl<-y_vals-  2*as.vector(corr.results.sd.frac[,ipert,w.i])
+  ucl<-y_vals+  2*as.vector(corr.results.sd.frac[,ipert,w.i])
+  arrows(n_vals,ucl,n_vals,lcl,length = .05,angle = 90,code = 3, lty = 3,col = colors.vec[ipert])
+  
+  
 }  
 
 

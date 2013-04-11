@@ -38,7 +38,7 @@ matched.cost<-0.01
 
 
 #w.vals.vec <- c(0.5,0.7,0.9,0.95)
-w.vals.vec <- c(0.7)
+w.vals.vec <- c(0.8)
 
 w.max.index<-length(w.vals.vec)
 
@@ -148,6 +148,7 @@ for(imc in 1:nmc)
       nc.jofc.dice.wt.p[pert_i,imc,m_it] = mean(match.perf.eval$P)
       nc.jofc.dice.wt.r[pert_i,imc,m_it] = mean(match.perf.eval$R)
       nc.jofc.dice.wt.f[pert_i,imc,m_it] <- mean(match.perf.eval$F)
+      nc.jofc.dice.wt.tm[pert_i,imc,m_it] <- match.perf.eval$True.Match.Ratio
       print(dim(nc.jofc.dice.wt.p))
       if (pert_i>1 && imc>1){
         print("Precision")

@@ -2,11 +2,12 @@
 run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_dice_weighted',
                               graph.is.weighted=FALSE,graph.is.directed=FALSE, preselected.seeds=NULL,
                               preselected.test= NULL,w.vals,num_v_to_embed_at_a_time = 1,  
-                              return.list=FALSE,  
+                              return.list=FALSE, sep.err.w, 
                               ...){
   
   
   matched.cost<-0.01
+  
   N<-nrow(G)
   corr.matches =array(0,dim=c(length(n_vals),num_iter,length(w.vals)))
   G.1<-G
@@ -49,7 +50,9 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
         #try(
         JOFC.graph.custom.dist(G.1,G.2,in.sample.ind=insample_logic_vec, 
                                d.dim=embed.dim, w.vals.vec=w.vals, graph.is.directed= graph.is.directed, 
-                               vert_diss_measure=diss_measure,  T.param  =  2,num_v_to_embed_at_a_time = num_v_to_embed_at_a_time,
+                               vert_diss_measure=diss_measure,  T.param  =  2,
+                               num_v_to_embed_at_a_time = num_v_to_embed_at_a_time,graph.is.weighted=graph.is.weighted,
+							   sep.err.w=sep.err.w,
 							   ...)
       #)
       
@@ -151,7 +154,7 @@ bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure, it.per.G=1,
     corr.matches<-run.experiment.JOFC(G,Gp,n_vals,num_iter=1,
                                       embed.dim=embed.dim, diss_measure=diss_measure,w.vals=w.vals,
                                       num_v_to_embed_at_a_time= num_v_to_embed_at_a_time,
-                                      return.list=TRUE,sep.err.w=sep.err.w)
+                                      return.list=TRUE, sep.err.w=sep.err.w)
     
     corr.match.array.mc[,ipert,] <- corr.matches[[it]]
   }
@@ -326,6 +329,8 @@ worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 	disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
 	Ac <- Ac[!disc_v,!disc_v]
 	Ag <- Ag[!disc_v,!disc_v]
+       v_count <- sum(!disc_v)
+	save(file="worm_v_count.txt", v_count ,ascii=TRUE)
 	graph.is.directed <- TRUE
 	if (weighted.graph){
 		
@@ -450,13 +455,16 @@ enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 	load("./data/AAA-187As-184x184.Rbin")
 	Ac=AAA[[130]]
 	Ag=AAA[[131]]
-	
+	sep.err.w<-TRUE
 	sum_row_c = apply(Ac,1,sum)
 	sum_col_c = apply(Ac,2,sum)
 	sum_row_g = apply(Ag,1,sum)
 	sum_col_g = apply(Ag,2,sum)
-	
-	disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
+	disc_v_c <- ((sum_col_c==0)&(sum_row_c==0)) 
+       disc_v_g <- ((sum_col_g==0) & (sum_row_g==0))
+	disc_v <- disc_v_c|disc_v_g 
+       v_count <- sum(!disc_v)
+       save(file="enron_v_count.txt",v_count ,ascii=TRUE)
 	Ac <- Ac[!disc_v,!disc_v]
 	Ag <- Ag[!disc_v,!disc_v]
 	graph.is.directed <- TRUE
@@ -468,10 +476,30 @@ enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 			graph.is.directed <- FALSE
 			Ac_graph <- (Ac+t(Ac))/2
 			Ag_graph <- (Ag+t(Ag))/2
+		} else{
+
+if (diss_measure=="ECT"||diss_measure=="diffusion"){ 
+sum_row_c = apply(Ac_graph,1,sum)
+	sum_col_c = apply(Ac_graph,2,sum)
+	sum_row_g = apply(Ag_graph,1,sum)
+	sum_col_g = apply(Ag_graph,2,sum)
+	disc_v_c <- ((sum_col_c==0)|(sum_row_c==0)) 
+       disc_v_g <- ((sum_col_g==0) | (sum_row_g==0))
+       disc_v <- disc_v_c|disc_v_g 
+	Ac_graph <- Ac_graph[!disc_v,!disc_v]
+	Ag_graph <- Ag_graph[!disc_v,!disc_v]
+       v_count <- sum(!disc_v)
+       save(file="enron_v_count.txt",v_count ,ascii=TRUE)
 		}
+		
+
+			}
+
 		
 		Ac_graph<- (Ac_graph>0)
 		Ag_graph<- (Ag_graph>0)
+	
+	
 	
 	
 	num.cores<-parallel::detectCores()
@@ -510,7 +538,8 @@ enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 		source("./lib/oosIM.R")
 		source("./lib/diffusion_distance.R")
 		#		
-		corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
+		corr.matches<-try( 
+				run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
 				embed.dim,diss_measure=diss_measure,
 				
 				graph.is.weighted=weighted.graph,
@@ -518,13 +547,20 @@ enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 				preselected.seeds=preselected.seeds,
 				preselected.test =preselected.test,
 				w.vals =w.vals,
-				return.list=TRUE
+				return.list=TRUE,
+				sep.err.w =sep.err.w
 		)
-		
+		)
 		#dimnames(corr.matches)[[1]]<-as.list(n_vals)
 		#dimnames(corr.matches)[[2]]<-paste("iteration",1:iter_per_core)
 		#dimnames(corr.matches)[[3]] <-as.list(w.vals)
-		corr.matches
+		if (inherits(corr.matches,"try-error")) {
+		sink("enron-debug.txt")
+		traceback()
+		sink()
+		NULL
+		}  else{  corr.matches
+		}
 	}
 	
 	
@@ -540,6 +576,8 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                                diss_measure="C_dice_weighted",symmetrize=TRUE,
                                preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE) {
   
+  
+  sep.err.w<-TRUE
   load("./data/Wiki_orig.RData")
   Ac=AG_wiki_en_mat
   Ag=AG_wiki_fr_mat
@@ -550,6 +588,8 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
   sum_col_g = apply(Ag,2,sum)
   
   disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
+       v_count <- sum(!disc_v)
+  save(file="wiki_v_count.txt",v_count,ascii=TRUE)
   Ac <- Ac[!disc_v,!disc_v]
   Ag <- Ag[!disc_v,!disc_v]
   graph.is.directed <- TRUE
@@ -612,7 +652,9 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                                       preselected.seeds=preselected.seeds,
                                       preselected.test =preselected.test,
                                       w.vals =w.vals,
-                                      return.list=TRUE
+                                      return.list=TRUE,
+				sep.err.w =sep.err.w
+
     )
     )
     
