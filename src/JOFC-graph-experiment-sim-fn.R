@@ -127,7 +127,7 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
 }
 
 bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure, it.per.G=1, 
-                            num_v_to_embed_at_a_time=NULL,w.vals,sep.err.w=FALSE){
+                            num_v_to_embed_at_a_time=NULL,w.vals,sep.err.w=TRUE){
   require(optmatch)
   require(igraph)
   require(MASS)
@@ -316,7 +316,7 @@ wiki_exp <- function(num_iter,n_vals,embed.dim=13) {
 
 worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 		diss_measure="C_dice_weighted",symmetrize=TRUE,
-		preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE) {
+		preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,sep.err.w=TRUE) {
 	
 	load("./data/celegansGraph.Rd")
 	
@@ -403,7 +403,8 @@ worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 				preselected.seeds=preselected.seeds,
 				preselected.test =preselected.test,
 				w.vals =w.vals,
-				return.list=TRUE
+				return.list=TRUE,
+				sep.err.w=sep.err.w
 		)
 		
 		#dimnames(corr.matches)[[1]]<-as.list(n_vals)
@@ -450,12 +451,12 @@ enron_exp <- function (num_iter,n_vals_vec,embed.dim=2){
 
 enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 		diss_measure="C_dice_weighted",symmetrize=TRUE,
-		preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE) {
+		preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,T1=130,T2=131,sep.err.w=TRUE) {
 	
 	load("./data/AAA-187As-184x184.Rbin")
-	Ac=AAA[[130]]
-	Ag=AAA[[131]]
-	sep.err.w<-TRUE
+	Ac=AAA[[T1]]
+	Ag=AAA[[T2]]
+
 	sum_row_c = apply(Ac,1,sum)
 	sum_col_c = apply(Ac,2,sum)
 	sum_row_g = apply(Ag,1,sum)
@@ -574,10 +575,10 @@ sum_row_c = apply(Ac_graph,1,sum)
 
 wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                                diss_measure="C_dice_weighted",symmetrize=TRUE,
-                               preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE) {
+                               preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,subset=NULL,sep.err.w=TRUE) {
   
   
-  sep.err.w<-TRUE
+  
   load("./data/Wiki_orig.RData")
   Ac=AG_wiki_en_mat
   Ag=AG_wiki_fr_mat
@@ -592,6 +593,17 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
   save(file="wiki_v_count.txt",v_count,ascii=TRUE)
   Ac <- Ac[!disc_v,!disc_v]
   Ag <- Ag[!disc_v,!disc_v]
+
+  if (!is.null(subset)&(subset<v_count)){
+   subset.v <-sample (1:v_count,subset,replace=FALSE)
+ Ac <- Ac[subset.v,subset.v]
+  Ag <- Ag[subset.v,subset.v]
+v_count<- subset
+
+
+}
+
+
   graph.is.directed <- TRUE
   
   Ac_graph <- Ac
@@ -659,7 +671,7 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
     )
     
     if (inherits(corr.matches,"try-error")){
-    sink("enron-error-debug.txt")
+    sink("wiki-error-debug.txt")
     print(traceback())
      print(corr.matches)
     sink()

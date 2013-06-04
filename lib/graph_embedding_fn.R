@@ -1512,7 +1512,8 @@ C_dice_weighted_SP_hybrid <- function(W,Graph){
       if ((sum(com.neigh_ij)>0)|(W[i,j]>0))
           D[i,j] <- (r_ij+2*(W[i,j]==0))/(r_ij+a_ij+2)
       else{
-        D[i,j] <- shortest.paths(Graph,v=i,to=j)
+        sp.paths <- shortest.paths(Graph,v=i)
+        D[i,j] <- sp.paths[j]
       }
     }
     
@@ -1580,7 +1581,9 @@ C_dice_weighted_SP_hybrid_in_out <- function(W,Graph){
       D.out[i,j] <- (r_ij+(W[i,j]==0)+(W[j,i]==0))/(r_ij+a_ij+2)
       if (sum(com.neigh_ij >0)) {Com.neigh[i,j]<-TRUE}
       if ((!Com.neigh[i,j])&(W[i,j]==0)&(W[j,i]==0)){
-        D.in[i,j] <- D.out[i,j]<- shortest.paths(Graph,v=i,to=j)
+	 sp.paths <- shortest.paths(Graph,v=i)
+
+        D.in[i,j] <- D.out[i,j]<- sp.paths[j]
       }
       
       
