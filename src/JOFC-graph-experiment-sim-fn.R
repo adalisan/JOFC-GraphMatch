@@ -692,3 +692,130 @@ v_count<- subset
 
 
 
+charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=TRUE,
+                              diss_measure="C_dice_weighted",symmetrize=TRUE,
+                              preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,
+                                    subset=n,sep.err.w=TRUE,
+                                    rep.seeds=rep.seeds) {
+  
+  require(Matrix)
+  options(error = browser)
+  load("./data/Ajt1-5699.Rbin")
+  load("./data/Ajt2-5699.Rbin")
+  
+  print(str(Ajt1))
+  print(str(Ajt2))
+  Ajt1<-as.matrix(Ajt1)
+  Ajt2<-as.matrix(Ajt2)
+  sum_row_c = rowSums(Ajt1) #apply(Ajt1,1,sum)
+  sum_col_c = colSums(Ajt1) #apply(Ajt1,2,sum)
+  sum_row_g = rowSums(Ajt2) #apply(Ajt2,1,sum)
+  sum_col_g = colSums(Ajt2) #apply(Ajt2,2,sum)
+  
+  disc_v <- ((sum_col_c==0)&(sum_row_c==0)) | ((sum_col_g==0) & (sum_row_g==0))
+  v_count <- sum(!disc_v)
+  save(file="charitynet_v_count.txt",v_count,ascii=TRUE)
+  Ajt1 <- Ajt1[!disc_v,!disc_v]
+  Ajt2 <- Ajt2[!disc_v,!disc_v]
+  
+  corr_match_list_agg <-list()
+  for (rep.seed.i in 1:rep.seeds) {
+  if (!is.null(subset)&(subset<v_count)){
+    subset.v <-sample (1:v_count,subset,replace=FALSE)
+    Ac <- Ajt1[subset.v,subset.v]
+    Ag <- Ajt2[subset.v,subset.v]
+    v_count<- subset
+    } else{
+    Ac=Ajt1
+    Ag=Ajt2
+    
+  }
+  
+  
+  graph.is.directed <- TRUE
+  
+  Ac_graph <- Ac
+  Ag_graph <- Ag
+  
+  if (symmetrize){
+    graph.is.directed <- FALSE
+    Ac_graph <- (Ac+t(Ac))/2
+    Ag_graph <- (Ag+t(Ag))/2
+  }
+  
+  Ac_graph<- (Ac_graph>0)
+  Ag_graph<- (Ag_graph>0)
+  
+  
+  num.cores<-parallel::detectCores()
+  iter_per_core <- ceiling(num_iter/num.cores)
+  require(foreach)
+  
+  if(seq){
+    registerDoSEQ()
+  } else if (.Platform$OS.type != "windows" && require("multicore")) {
+    require(doMC)
+    registerDoMC()
+  } else if (FALSE &&                     # doSMP is buggy
+               require("doSMP")) {
+    workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
+    on.exit(stopWorkers(workers), add = TRUE)
+    registerDoSMP(workers)
+  } else if (require("doSNOW")) {
+    cl <- snow::makeCluster(num.cores, type = "SOCK")
+    on.exit(snow::stopCluster(cl), add = TRUE)
+    registerDoSNOW(cl)
+  } else {
+    registerDoSEQ()
+  }  
+  
+  
+  corr_match_list<- foreach(i=1:num.cores, .combine="c",.export="run.experiment.JOFC") %dopar% {
+   
+    require(optmatch)
+    require(igraph)
+    require(MASS)
+    require(MCMCpack)
+    require(clue)
+    source("./lib/graph_embedding_fn.R")
+    source("./lib/simulation_math_util_fn.R")
+    source("./lib/smacofM.R")
+    source("./lib/oosIM.R")
+    source("./lib/diffusion_distance.R")
+    #		
+    corr.matches <- try(
+      run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
+                          embed.dim,diss_measure=diss_measure,
+                          
+                          graph.is.weighted=weighted.graph,
+                          graph.is.directed= graph.is.directed,
+                          preselected.seeds=preselected.seeds,
+                          preselected.test =preselected.test,
+                          w.vals =w.vals,
+                          return.list=TRUE,
+                          sep.err.w =sep.err.w
+                          
+      )
+    )
+    
+    if (inherits(corr.matches,"try-error")){
+      sink(paste("charity-error-debug",sample.int(10000,1),".txt",collapse=""))
+      print(traceback())
+      print(corr.matches)
+      sink()
+    }
+    
+    #dimnames(corr.matches)[[1]]<-as.list(n_vals)
+    #dimnames(corr.matches)[[2]]<-paste("iteration",1:iter_per_core)
+    #dimnames(corr.matches)[[3]] <-as.list(w.vals)
+    corr.matches
+   }
+  corr_match_list_agg <- c(corr_match_list_agg,corr_match_list)
+  }
+  
+  print (str(corr_match_list_agg))
+  
+  
+  return (corr_match_list_agg )
+}
+

@@ -1196,9 +1196,9 @@ graph2dissimilarity <- function (G,Gp,
 				if (!is.na(D.impute)&&(!is.null(D.impute)))
                                D.in[is.na(D.in)]<- D.impute
 				if (any(is.na(D.in))) {
-					sink("D.in.na.txt")
+					#sink(paste("D.in.na",runif(1),".txt"))
 					   print(str(D.in))
-					sink()
+					#sink()
 
 				}  
 
@@ -1224,12 +1224,13 @@ graph2dissimilarity <- function (G,Gp,
 			X  <-   X.embeds[[1]]
 			dim.X <- dim(X)
 			Y.0  <-   matrix(-1,length(in.sample.ind),dim.X[2])
-			sink("In_out_sample_graph_embedding.txt")
+			#sink(paste("In_out_sample_graph_embedding.txt",sample.int(1000,1),collapse=""))
 			print("Embed.Nodes.one.atat: dim(X),dim(Y.0),sum(in.sample.ind)")
 			print(dim(X))
 			print(dim(Y.0))
 			print(sum(in.sample.ind))
-			sink()
+      print("----")
+			#sink()
 			Y.0[in.sample.ind,] <- X
 			
 			#Vertices are embedded in groups
