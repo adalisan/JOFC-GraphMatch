@@ -1,4 +1,6 @@
-
+#' creates a random Graph
+#'@param s
+#'@export
 genG  <-   function(s  =  seed,n  =  1000,np  =  50,p  =  0.1,q  =  0.5) {
 	x  <-   matrix(p, nrow  =  n, ncol  =  n)    ## null: (100-np)x98 matrix
 	if (np>0) {
@@ -16,7 +18,10 @@ genG  <-   function(s  =  seed,n  =  1000,np  =  50,p  =  0.1,q  =  0.5) {
 	return(A)
 }
 
-
+#' Returns  a randomly perturbed adjacency matrix by bitflipping a given adjacency matrix
+#'@param G the adjacency matrix to be perturbed
+#'@param q the probability of changing a 1 to 0 or 0 to 1 in the perturbation
+#'@export
 perturbG <-  function(G,q){
 	n <-  nrow(G)
 	Flip.mat <-  matrix(0,nrow  =  n,ncol  =  n)
@@ -37,15 +42,14 @@ perturbG <-  function(G,q){
 	
 }
 
-
-graph2dissimilarity <- function (G,Gp,
-		in.sample.ind,
-		d.dim,
-		w.vals.vec,
-		graph.mode,
-		vert_diss_measure,
-		T.param,
-		num_v_to_embed_at_a_time=1  ,
+#' Computes a given a dissimilarity between vertices in two graphs whose adjacency/weight matrices are given
+#' @param G
+#' @param Gp
+#' @export
+graph2dissimilarity <- function (G,Gp,in.sample.ind,
+		w.vals.vec, graph.mode
+    ,	vert_diss_measure, T.param
+    ,	num_v_to_embed_at_a_time=1  ,
 		weighted.g) {
 	n <-  nrow(G)
 	Graph.1 <-  graph.adjacency(G, mode =  graph.mode,weighted=weighted.g)
@@ -125,18 +129,11 @@ graph2dissimilarity <- function (G,Gp,
 	    
 	    D.1 <- C_dice_weighted_SP_hybrid(G,Graph.1)
 	    D.2 <- C_dice_weighted_SP_hybrid(Gp,Graph.2)
-	  }
-    
-   
-    
-    
+	  } 
 	}
   
-  
 		# In case dissimilarities blow up for diss. measure, put a limit on max 
-		# value for diss.
-		
-		
+		# value for diss.		
 		
 		if (vert_diss_measure == "diffusion"){
 			
@@ -169,17 +166,17 @@ graph2dissimilarity <- function (G,Gp,
 		
 		D.w   [in.sample.ind.half,]   <- D.2[in.sample.ind.half,]
 		D.w.p [in.sample.ind.half,]   <- D.1[in.sample.ind.half,]
-		
-		
-		
-		D.M <-   rbind(cbind(D.1,D.w),
+  	D.M <-   rbind(cbind(D.1,D.w),
 			          	cbind(D.w.p,D.2)
 		)
 		return(D.M)
 	}
 	
 	
-	
+	#' Embeds two graphs using a chosen dissimilarity
+  #' @param G
+  #' @param Gp
+  #' @export
 	JOFC.graph.custom.dist  <-   function(G,Gp,
 			in.sample.ind,
 			d.dim,
@@ -189,20 +186,16 @@ graph2dissimilarity <- function (G,Gp,
 			T.param  =  NULL,
 			num_v_to_embed_at_a_time   =   sum(!in.sample.ind)/2,
 			graph.is.weighted=FALSE ,
-			sep.err.w=TRUE,   legacy.func= TRUE)
+			sep.err.w=TRUE,   legacy.func= TRUE, const.dim=FALSE)
 	{
-		
-		
+			
 		
 		n <-  nrow(G)
 		graph.mode <-   ifelse(graph.is.directed,"directed","undirected")
 		weighted.g <- graph.is.weighted
 		if (!weighted.g)
 			weighted.g<-NULL
-		# print("T.param")
-		# print(T.param)
-		
-		
+	
 		
 		D.M<-graph2dissimilarity (G,Gp,
 				in.sample.ind,
@@ -252,7 +245,7 @@ graph2dissimilarity <- function (G,Gp,
 				assume.matched.for.oos   =   FALSE ,
 				w.vals  =  w.vals.vec,
 				oos.embed.n.at.a.time   =  num_v_to_embed_at_a_time,
-				mds.init.method="gower")
+				mds.init.method="gower", const.dim=const.dim)
 	}
 		
 		#print(str(Embed.List))
@@ -528,7 +521,6 @@ graph2dissimilarity <- function (G,Gp,
 		test.m <- all.m
 		insample.indices <-   which(in.sample.ind)
 		
-		# Embed in-sample using different weight matrices (differentw values)
 		
 		dim.increment<-10
 		
@@ -888,7 +880,7 @@ graph2dissimilarity <- function (G,Gp,
 			assume.matched.for.oos   =   FALSE ,
 			w.vals,
 			oos.embed.n.at.a.time   =   sum(!in.sample.ind)/2,
-			mds.init.method="gower"){
+			mds.init.method="gower", const.dim=FALSE){
 		min.correct.frac.for.full.seed<-0.9
 		#sink("Embed.debug.txt")
 		
@@ -975,6 +967,10 @@ graph2dissimilarity <- function (G,Gp,
 				full.seed.match   <-    TRUE
 				print(paste("optimal dim is ", embed.dim))
 			}
+                    if (const.dim==TRUE) 		full.seed.match   <-    TRUE
+
+
+
 			True.match.last.memory[1] <-    True.match.last.memory[2]
 			True.match.last.memory[2] <-    True.match.last.memory[3]
 			True.match.last.memory[3] <-   numTrueMatch
@@ -1168,6 +1164,8 @@ graph2dissimilarity <- function (G,Gp,
 				full.seed.match   <-    TRUE
 				print(paste("optimal dim is ", embed.dim))
 			}
+                    if (const.dim==TRUE) 		full.seed.match   <-    TRUE
+
 			True.match.last.memory[1] <-    True.match.last.memory[2]
 			True.match.last.memory[2] <-    True.match.last.memory[3]
 			True.match.last.memory[3] <-   numTrueMatch

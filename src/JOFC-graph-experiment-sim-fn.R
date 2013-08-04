@@ -8,7 +8,7 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
   
   matched.cost<-0.01
   
-  N<-nrow(G)
+  N <- nrow(G)
   corr.matches =array(0,dim=c(length(n_vals),num_iter,length(w.vals)))
   G.1<-G
   G.2<-Gp
@@ -696,7 +696,7 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
                               diss_measure="C_dice_weighted",symmetrize=TRUE,
                               preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,
                                     subset=n,sep.err.w=TRUE,
-                                    rep.seeds=rep.seeds) {
+                                    rep.seeds=rep.seeds, const.dim=FALSE) {
   
   require(Matrix)
   options(error = browser)
@@ -721,7 +721,17 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   corr_match_list_agg <-list()
   for (rep.seed.i in 1:rep.seeds) {
   if (!is.null(subset)&(subset<v_count)){
-    subset.v <-sample (1:v_count,subset,replace=FALSE)
+    found.conn.subgraphs.in.both.graphs <- FALSE 
+    conn.verts.in.both <- 1:v_count
+    while ( !found.conn.subgraphs.in.both.graphs) {
+    v.cent <- sample (1:v_count,1)
+    sub.g.1 <-  subcomponent(graph.adjacency(Ajt1), v.cent, mode = c("all"))
+    sub.g.2 <-  subcomponent(graph.adjacency(Ajt2), v.cent, mode = c("all"))
+    conn.verts.in.both <- intersect(sub.g.1,sub.g.2)
+    if (length(conn.verts.in.both)>subset)
+	    found.conn.subgraphs.in.both.graphs <- TRUE        
+    }
+    subset.v <-sample (    conn.verts.in.both,subset,replace=FALSE)
     Ac <- Ajt1[subset.v,subset.v]
     Ag <- Ajt2[subset.v,subset.v]
     v_count<- subset
@@ -793,8 +803,8 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
                           preselected.test =preselected.test,
                           w.vals =w.vals,
                           return.list=TRUE,
-                          sep.err.w =sep.err.w
-                          
+                          sep.err.w =sep.err.w,
+                          const.dim=const.dim
       )
     )
     
