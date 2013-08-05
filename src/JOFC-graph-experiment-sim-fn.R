@@ -702,8 +702,7 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   options(error = browser)
   load("./data/Ajt1-5699.Rbin")
   load("./data/Ajt2-5699.Rbin")
-  
-  giant.com
+
   print(str(Ajt1))
   print(str(Ajt2))
   Ajt1<-as.matrix(Ajt1)
