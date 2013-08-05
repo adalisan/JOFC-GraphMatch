@@ -1643,4 +1643,9 @@ C_dice_weighted_SP_hybrid_in_out <- function(W,Graph){
 		ect
 	}
 	
-
+giant.component <- function(G){
+  cl.G<- clusters(G)
+  larg.conn.comp<-which.max(cl.G$csize)
+  G.sub <- induced.subgraph(G,vids=which(cl.G$membership==larg.conn.comp))
+  return(G.sub)
+}

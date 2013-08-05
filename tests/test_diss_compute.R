@@ -1,14 +1,19 @@
 # test dissimilarities for all graphs
+
+library(igraph)
+source("./lib/diffusion_distance.R")
+library(MASS) #ginv function
+
 datasets <- c("worm","enron","wiki","cnet")
 weighted <- c(TRUE,FALSE)
 symmetrize <- c(TRUE,FALSE)
 normalize.diss<-c(TRUE,FALSE)
 
-dissim.meas<- c('default',"diffusion",'ECT','ell1','jGraph.1card'
+dissim.meas<- c('default',"diffusion",'ECT','ell1','jaccard'
                 , 'dice','invlogweighted','C_dice_weighted'
                 ,'hybrid_DICE_SP')
-test.cases <- expand.grid(datasets,weighted,symmetrize,normalize.diss)
-colnames(test.caste) <-("datasets","weighted","symmetrize","normalize.diss")
+test.cases <- expand.grid(datasets,weighted,symmetrize,dissim.meas,normalize.diss)
+colnames(test.cases) <-c("datasets","weighted","symmetrize","dissim.meas", "normalize.diss")
 
 load("./data/celegansGraph.Rd")
 load("./data/AAA-187As-184x184.Rbin")
@@ -18,34 +23,47 @@ load("./data/Ajt1-5699.Rbin")
 load("./data/Ajt2-5699.Rbin")
 
 num.test.cases<- dim(test.cases)[1]
+
+subset = 400
+
 for (test.case.it in 1:num.test.cases){
   
-  if (test.case[test.case.it,"datasets"]=="worm"){
+  if (test.cases[test.case.it,"datasets"]=="worm"){
     Graph.1 <- Ac
     Graph.2 <- Ag
-  } else if (test.case[test.case.it,"datasets"]=="enron"){
-    Graph.1<- AAA[130]
-    Graph.2 <- AAA[131]
-  } else if (test.case[test.case.it,"datasets"]=="wiki"){
-    en_a<- graph.adjacency(en_a)
-    fr_a<- graph.adjacency(fr_a)
+    if (inherits(Graph.1,"igraph"))
+      Graph.1<-get.adjacency(Graph.1)
+    
+    if (inherits(Graph.2,"igraph"))
+      Graph.2<-get.adjacency(Graph.2)
+  } else if (test.cases[test.case.it,"datasets"]=="enron"){
+    Graph.1<- AAA[[130]]
+    Graph.2 <- AAA[[131]]
+    if (inherits(Graph.1,"igraph"))
+      Graph.1<-get.adjacency(Graph.1)
+    
+    if (inherits(Graph.2,"igraph"))
+      Graph.2<-get.adjacency(Graph.2)
+  } else if (test.cases[test.case.it,"datasets"]=="wiki"){
+    #en_a<- get.adjacency(en_a)
+    #fr_a<- get.adjacency(fr_a)
     #en_a_cl <- giant.component(en_a)
     #fr_a_cl <- giant.component(fr_a)
-    subset = 400
+    
     Graph.1 <- en_a
     Graph.2 <- fr_a
     
    
     
-  } else if (test.case[test.case.it,"datasets"]=="cnet"){
+  } else if (test.cases[test.case.it,"datasets"]=="cnet"){
     Graph.1<- as.matrix(Ajt1)
     Graph.2<- as.matrix(Ajt2)
   }
   
   
   N<-nrow(Graph.1)
-  
-  if (!is.null(subset)& subset<N){
+  v_count<- N
+  if (!is.null(subset) & subset<N){
     subset.v <-sample (1:nrow(Graph.1),subset,replace=FALSE)
     Graph.1<- Graph.1[subset.v,subset.v]
     Graph.2<- Graph.2[subset.v,subset.v]
@@ -55,7 +73,7 @@ for (test.case.it in 1:num.test.cases){
   }
   
   
-  n_v<- floor(N/2)
+  n_v<- floor(v_count/2)
  
   
   sum_row_c = apply(Graph.1,1,sum)
@@ -69,7 +87,7 @@ for (test.case.it in 1:num.test.cases){
   v_count <- sum(!disc_v)
   
   graph.is.directed <- TRUE
-  if (test.case[test.case.it,"weighted"]){
+  if (test.cases[test.case.it,"weighted"]){
     
     scale_f <- lm(as.vector(Graph.1) ~ as.vector(Graph.2) + 0)$coefficients
     Graph.1_graph <- Graph.1
@@ -77,7 +95,7 @@ for (test.case.it in 1:num.test.cases){
     
     
     #symmetrize
-    if (test.case[test.case.it,"symmetrize"]){
+    if (test.cases[test.case.it,"symmetrize"]){
       graph.is.directed <- FALSE
       Graph.1_graph <- (Graph.1_graph+t(Graph.1_graph))/2
       Graph.2_graph <- (Graph.2_graph+t(Graph.2_graph))/2
@@ -86,7 +104,7 @@ for (test.case.it in 1:num.test.cases){
     Graph.1_graph <- Graph.1
     Graph.2_graph <- Graph.2
     
-    if (test.case[test.case.it,"symmetrize"]){
+    if (test.cases[test.case.it,"symmetrize"]){
       graph.is.directed <- FALSE
       Graph.1_graph <- (Graph.1+t(Graph.1))/2
       Graph.2_graph <- (Graph.2+t(Graph.2))/2
@@ -95,16 +113,21 @@ for (test.case.it in 1:num.test.cases){
     Graph.1_graph<- (Graph.1_graph>0)
     Graph.2_graph<- (Graph.2_graph>0)
   }
-  insample_logic_vec <- 1:N %in% sample(1:N,n_v,replGraph.1e=FALSE) 
+  insample_logic_vec <- 1:N %in% sample(1:N,n_v,replace=FALSE) 
   insample_logic_vec <- c(insample_logic_vec,insample_logic_vec)
   
   graph.mode <-   ifelse(graph.is.directed,"directed","undirected")
   
+  weight.igraph.param<-NULL
+  weight.igraph.param <- if (test.cases[test.case.it,"weighted"]) {TRUE}
   G.M<-graph2dissimilarity(G=Graph.1_graph,Gp=Graph.2_graph,in.sample.ind=insample_logic_vec
-                           , vert_diss_measure=test.case[test.case.it,"dissim.meas"]
-                           ,  d.dim=10, w.vals.vec=0.8, graph.mode=graph.mode
+                           , vert_diss_measure=test.cases[test.case.it,"dissim.meas"]
+                           , w.vals.vec=0.8, graph.mode=graph.mode
                            , T.param=2, num_v_to_embed_at_a_time=1
-                           , weighted.g=test.case[test.case.it,"weighted"])
+                           , weighted.g= weight.igraph.param)
+  print(test.cases[test.case.it,])
+  print(str(G.M))
+  print(sum(is.na(G.M)))
   
 }
 

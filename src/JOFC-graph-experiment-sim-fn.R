@@ -703,6 +703,7 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   load("./data/Ajt1-5699.Rbin")
   load("./data/Ajt2-5699.Rbin")
   
+  giant.com
   print(str(Ajt1))
   print(str(Ajt2))
   Ajt1<-as.matrix(Ajt1)
@@ -718,6 +719,18 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   Ajt1 <- Ajt1[!disc_v,!disc_v]
   Ajt2 <- Ajt2[!disc_v,!disc_v]
   
+  graph.1 <- graph.adjacency(Ajt1)
+  graph.2 <- graph.adjacency(Ajt2,weighted=TRUE)
+  
+  
+  graph.1  <- giant.component(graph.1)
+  graph.2  <- giant.component(graph.2)
+  V.common <- intersect(V(graph.1)$name,V(graph.2)$name)
+  graph.1  <- induced.subgraph(graph.1,vids=V.common)
+  graph.2  <- induced.subgraph(graph.2,vids=V.common)
+  save(file="charitynet_v_count.txt",length(V.common),ascii=TRUE)
+  write.graph(graph.1,"pruned_cnet_graph_1.gml",format="gml")
+  write.graph(graph.2,"pruned_cnet_graph_2.gml",format="gml")
   corr_match_list_agg <-list()
   for (rep.seed.i in 1:rep.seeds) {
   if (!is.null(subset)&(subset<v_count)){
@@ -725,15 +738,15 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
     conn.verts.in.both <- 1:v_count
     while ( !found.conn.subgraphs.in.both.graphs) {
     v.cent <- sample (1:v_count,1)
-    sub.g.1 <-  subcomponent(graph.adjacency(Ajt1), v.cent, mode = c("all"))
-    sub.g.2 <-  subcomponent(graph.adjacency(Ajt2), v.cent, mode = c("all"))
+    sub.g.1 <-  subcomponent(graph.1, v.cent, mode = c("all"))
+    sub.g.2 <-  subcomponent(graph.2, v.cent, mode = c("all"))
     conn.verts.in.both <- intersect(sub.g.1,sub.g.2)
     if (length(conn.verts.in.both)>subset)
 	    found.conn.subgraphs.in.both.graphs <- TRUE        
     }
     subset.v <-sample (    conn.verts.in.both,subset,replace=FALSE)
-    Ac <- Ajt1[subset.v,subset.v]
-    Ag <- Ajt2[subset.v,subset.v]
+    Ac <- get.adjacency(induced.subgraph(graph.1,subset.v))
+    Ag <- get.adjacency(induced.subgraph(graph.2,subset.v),attr="weight")
     v_count<- subset
     } else{
     Ac=Ajt1
