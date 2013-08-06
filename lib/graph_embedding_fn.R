@@ -199,7 +199,6 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 		
 		D.M<-graph2dissimilarity (G,Gp,
 				in.sample.ind,
-				d.dim,
 				w.vals.vec,
 				graph.mode,
 				vert_diss_measure,
