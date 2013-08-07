@@ -660,7 +660,7 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
     source("./lib/oosMDS.R")
     source("./lib/diffusion_distance.R")
     #		
-    corr.matches <- try(
+    corr.matches <-# try(
       run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
                           embed.dim,diss_measure=diss_measure,
                           
@@ -673,7 +673,7 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                           sep.err.w =sep.err.w
                           
       )
-    )
+   # )
     
     if (inherits(corr.matches,"try-error")){
       sink("wiki-error-debug.txt")
@@ -710,8 +710,8 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   
   print(str(Ajt1))
   print(str(Ajt2))
-  Ajt1<-as.matrix(Ajt1)
-  Ajt2<-as.matrix(Ajt2)
+ # Ajt1<-as.matrix(Ajt1)
+#  Ajt2<-as.matrix(Ajt2)
   sum_row_c = rowSums(Ajt1) #apply(Ajt1,1,sum)
   sum_col_c = colSums(Ajt1) #apply(Ajt1,2,sum)
   sum_row_g = rowSums(Ajt2) #apply(Ajt2,1,sum)
@@ -773,7 +773,8 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
     
     Ac_graph<- (Ac_graph>0)
     Ag_graph<- (Ag_graph>0)
-    
+    Ac_graph<- as.matrix(Ac_graph)
+    Ag_graph<- as.matrix(Ag_graph)
     
     num.cores<-parallel::detectCores()
     iter_per_core <- ceiling(num_iter/num.cores)
