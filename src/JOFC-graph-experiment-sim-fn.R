@@ -137,6 +137,7 @@ bitflip_MC_rep <- function (pert,n,n_vals,embed.dim,diss_measure, it.per.G=1,
   source("./lib/simulation_math_util_fn.R")
   source("./lib/smacofM.R")
   source("./lib/oosIM.R")
+  source("./lib/oosMDS.R")
   source("./lib/diffusion_distance.R")
   
   npert<-length(pert)
@@ -212,6 +213,7 @@ bitflip_exp_w<-function (nmc,pert,n,n_vals,embed.dim=6,w.vals=0.8,diss_measure)
     source("./lib/simulation_math_util_fn.R")
     source("./lib/smacofM.R")
     source("./lib/oosIM.R")
+    source("./lib/oosMDS.R")
     source("./lib/diffusion_distance.R")
     rep.result <- bitflip_MC_rep (pert,n,n_vals,embed.dim=embed.dim,diss_measure=diss_measure,it.per.G=iter_per_core, 
                                   num_v_to_embed_at_a_time=1,w.vals=w.vals)
@@ -393,6 +395,7 @@ worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
     source("./lib/simulation_math_util_fn.R")
     source("./lib/smacofM.R")
     source("./lib/oosIM.R")
+    source("./lib/oosMDS.R")
     source("./lib/diffusion_distance.R")
     #		
     corr.matches<-run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
@@ -537,6 +540,7 @@ enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
     source("./lib/simulation_math_util_fn.R")
     source("./lib/smacofM.R")
     source("./lib/oosIM.R")
+    source("./lib/oosMDS.R")
     source("./lib/diffusion_distance.R")
     #		
     corr.matches<-try( 
@@ -653,6 +657,7 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
     source("./lib/simulation_math_util_fn.R")
     source("./lib/smacofM.R")
     source("./lib/oosIM.R")
+    source("./lib/oosMDS.R")
     source("./lib/diffusion_distance.R")
     #		
     corr.matches <- try(
@@ -804,6 +809,7 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
       source("./lib/simulation_math_util_fn.R")
       source("./lib/smacofM.R")
       source("./lib/oosIM.R")
+      source("./lib/oosMDS.R") #for tau.e function
       source("./lib/diffusion_distance.R")
       #		
       corr.matches <- try(

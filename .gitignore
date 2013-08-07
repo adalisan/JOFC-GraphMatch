@@ -8,3 +8,4 @@ cache/
 graphs/
 
 /data/*.RData
+.Rproj.user
