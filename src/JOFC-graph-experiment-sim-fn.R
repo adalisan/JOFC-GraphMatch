@@ -673,7 +673,7 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                           sep.err.w =sep.err.w
                           
       )
-   # )
+    # )
     
     if (inherits(corr.matches,"try-error")){
       sink("wiki-error-debug.txt")
@@ -699,7 +699,8 @@ wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 
 charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=TRUE,
                                     diss_measure="C_dice_weighted",symmetrize=TRUE,
-                                    preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,
+                                    preselected.seeds=NULL,preselected.test=NULL
+                                    ,w.vals, seq=FALSE,
                                     subset=n,sep.err.w=TRUE,
                                     rep.seeds=rep.seeds, const.dim=FALSE) {
   
@@ -710,8 +711,10 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   
   print(str(Ajt1))
   print(str(Ajt2))
- # Ajt1<-as.matrix(Ajt1)
-#  Ajt2<-as.matrix(Ajt2)
+  diag(Ajt1)<- 0
+  diag(Ajt2)<- 0
+  # Ajt1<-as.matrix(Ajt1)
+  #  Ajt2<-as.matrix(Ajt2)
   sum_row_c = rowSums(Ajt1) #apply(Ajt1,1,sum)
   sum_col_c = colSums(Ajt1) #apply(Ajt1,2,sum)
   sum_row_g = rowSums(Ajt2) #apply(Ajt2,1,sum)
@@ -723,7 +726,7 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   Ajt1 <- Ajt1[!disc_v,!disc_v]
   Ajt2 <- Ajt2[!disc_v,!disc_v]
   
-  graph.1 <- graph.adjacency(Ajt1)
+  graph.1 <- graph.adjacency(Ajt1,weighted=TRUE)
   graph.2 <- graph.adjacency(Ajt2,weighted=TRUE)
   
   
@@ -737,22 +740,48 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   write.graph(graph.1,"pruned_cnet_graph_1.gml",format="gml")
   write.graph(graph.2,"pruned_cnet_graph_2.gml",format="gml")
   corr_match_list_agg <-list()
+  
   for (rep.seed.i in 1:rep.seeds) {
-    if (!is.null(subset)&(subset<pruned.graph.size)){
+    if (!is.null(subset)&(subset<pruned.graph.size))
+      {
+      
       found.conn.subgraphs.in.both.graphs <- FALSE 
-      conn.verts.in.both <- 1:pruned.graph.size
-      while ( !found.conn.subgraphs.in.both.graphs) {
+      while ( !found.conn.subgraphs.in.both.graphs){
         v.cent <- sample (1:pruned.graph.size,1)
-        sub.g.1 <-  subcomponent(graph.1, v.cent, mode = c("all"))
-        sub.g.2 <-  subcomponent(graph.2, v.cent, mode = c("all"))
-        conn.verts.in.both <- intersect(sub.g.1,sub.g.2)
-        if (length(conn.verts.in.both)>subset)
-          found.conn.subgraphs.in.both.graphs <- TRUE        
+        found.conn.subgraph.1 <-NULL
+        found.conn.subgraph.2 <-NULL
+        for (k in 1:7)
+        {
+          #look at kth neighborhood of v.cent in first.graph
+          subgraph.1<-(graph.neighborhood(graph.1,order=k,nodes=v.cent))[[1]]
+          subgraph.vert.1 <- V(subgraph.1)$name
+          #if # of vertices in subgraph is larger than subset
+          if (length( subgraph.vert.1 )>subset)
+          {
+            # if largest component in graph.2 is large enough
+            subgraph.2<- giant.component(induced.subgraph(graph.2, subgraph.vert.1))                                      
+            if (vcount(subgraph.2)>subset)
+            {
+              subgraph.1<-induced.subgraph(subgraph.1,V(subgraph.2)$name)
+              if (vcount(subgraph.1)>subset) 
+              {
+                found.conn.subgraph.1 <- subgraph.1
+                found.conn.subgraph.2 <- subgraph.2
+                found.conn.subgraphs.in.both.graphs<- TRUE
+                break
+              }
+            }
+            
+          }
+          
+        }
       }
-      subset.v <-sample (conn.verts.in.both, subset,replace=FALSE)
-      Ac <- get.adjacency(induced.subgraph(graph.1,subset.v))
-      Ag <- get.adjacency(induced.subgraph(graph.2,subset.v),attr="weight")
-      v_count<- subset
+      
+      
+      
+      Ac <- get.adjacency(found.conn.subgraph.1,attr="weight")
+      Ag <- get.adjacency(found.conn.subgraph.2,attr="weight")
+      v_count<- vcount(found.conn.subgraph.1)
     } else{
       Ac=Ajt1
       Ag=Ajt2
@@ -771,8 +800,10 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
       Ag_graph <- (Ag+t(Ag))/2
     }
     
-    Ac_graph<- (Ac_graph>0)
-    Ag_graph<- (Ag_graph>0)
+    if (!weighted.graph) {
+      Ac_graph<- (Ac_graph>0)
+      Ag_graph<- (Ag_graph>0)
+    }
     Ac_graph<- as.matrix(Ac_graph)
     Ag_graph<- as.matrix(Ag_graph)
     
