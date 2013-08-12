@@ -740,34 +740,33 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
   write.graph(graph.1,"pruned_cnet_graph_1.gml",format="gml")
   write.graph(graph.2,"pruned_cnet_graph_2.gml",format="gml")
   corr_match_list_agg <-list()
-  
   for (rep.seed.i in 1:rep.seeds) {
-    if (!is.null(subset)&(subset<pruned.graph.size))
-      {
+    if (!is.null(subset)&(subset<pruned.graph.size)){
       
       found.conn.subgraphs.in.both.graphs <- FALSE 
+      v.cent<-0
       while ( !found.conn.subgraphs.in.both.graphs){
-        v.cent <- sample (1:pruned.graph.size,1)
+        v.cent <- sample (V(graph.1),1)
         found.conn.subgraph.1 <-NULL
         found.conn.subgraph.2 <-NULL
-        for (k in 1:7)
-        {
+        found.neigh.size <-0
+        prev.subgraph.1 <- v.cent 
+        prev.subgraph.2 <- v.cent
+        for (k in 1:7){
           #look at kth neighborhood of v.cent in first.graph
           subgraph.1<-(graph.neighborhood(graph.1,order=k,nodes=v.cent))[[1]]
           subgraph.vert.1 <- V(subgraph.1)$name
           #if # of vertices in subgraph is larger than subset
-          if (length( subgraph.vert.1 )>subset)
-          {
+          if (length( subgraph.vert.1 )>=subset){
             # if largest component in graph.2 is large enough
             subgraph.2<- giant.component(induced.subgraph(graph.2, subgraph.vert.1))                                      
-            if (vcount(subgraph.2)>subset)
-            {
+            if (vcount(subgraph.2)>=subset){
               subgraph.1<-induced.subgraph(subgraph.1,V(subgraph.2)$name)
-              if (vcount(subgraph.1)>subset) 
-              {
+              if (vcount(subgraph.1)>=subset) {
                 found.conn.subgraph.1 <- subgraph.1
                 found.conn.subgraph.2 <- subgraph.2
                 found.conn.subgraphs.in.both.graphs<- TRUE
+                found.neigh.size <- k
                 break
               }
             }
@@ -776,107 +775,119 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
           
         }
       }
+        
+      subgraph.verts.1.prev <- (neighborhood(graph.1,order=found.neigh.size-1,nodes=v.cent))[[1]]
+      subgraph.2<- giant.component(induced.subgraph(graph.2, subgraph.verts.1.prev ))
       
+      common.verts.prev<- intersect(V(graph.1)$name[subgraph.verts.1.prev ],V(subgraph.2)$name)
+      common.verts <- intersect(V(found.conn.subgraph.1)$name,V(found.conn.subgraph.2)$name)
       
+      needed.verts <- subset- length(common.verts.prev)
+      sample.from.set.difference <- sample(setdiff(common.verts,common.verts.prev),needed.verts)
+       common.verts.select<- union(common.verts.prev,sample.from.set.difference )
       
-      Ac <- get.adjacency(found.conn.subgraph.1,attr="weight")
-      Ag <- get.adjacency(found.conn.subgraph.2,attr="weight")
-      v_count<- vcount(found.conn.subgraph.1)
-    } else{
-      Ac=Ajt1
-      Ag=Ajt2
+      found.conn.subgraph.1<- induced.subgraph(graph.1,vids=common.verts.select)
+      found.conn.subgraph.2<- induced.subgraph(graph.2,vids=common.verts.select)
       
-    }
-    
-    
-    graph.is.directed <- TRUE
-    
-    Ac_graph <- Ac
-    Ag_graph <- Ag
-    
-    if (symmetrize){
-      graph.is.directed <- FALSE
-      Ac_graph <- (Ac+t(Ac))/2
-      Ag_graph <- (Ag+t(Ag))/2
-    }
-    
-    if (!weighted.graph) {
-      Ac_graph<- (Ac_graph>0)
-      Ag_graph<- (Ag_graph>0)
-    }
-    Ac_graph<- as.matrix(Ac_graph)
-    Ag_graph<- as.matrix(Ag_graph)
-    
-    num.cores<-parallel::detectCores()
-    iter_per_core <- ceiling(num_iter/num.cores)
-    require(foreach)
-    
-    if(seq){
-      registerDoSEQ()
-    } else if (.Platform$OS.type != "windows" && require("multicore")) {
-      require(doMC)
-      registerDoMC()
-    } else if (FALSE &&                     # doSMP is buggy
-                 require("doSMP")) {
-      workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
-      on.exit(stopWorkers(workers), add = TRUE)
-      registerDoSMP(workers)
-    } else if (require("doSNOW")) {
-      cl <- snow::makeCluster(num.cores, type = "SOCK")
-      on.exit(snow::stopCluster(cl), add = TRUE)
-      registerDoSNOW(cl)
-    } else {
-      registerDoSEQ()
-    }  
-    
-    
-    corr_match_list<- foreach(i=1:num.cores, .combine="c",.export="run.experiment.JOFC") %dopar% {
-      
-      require(optmatch)
-      require(igraph)
-      require(MASS)
-      require(MCMCpack)
-      require(clue)
-      source("./lib/graph_embedding_fn.R")
-      source("./lib/simulation_math_util_fn.R")
-      source("./lib/smacofM.R")
-      source("./lib/oosIM.R")
-      source("./lib/oosMDS.R") #for tau.e function
-      source("./lib/diffusion_distance.R")
-      #		
-      corr.matches <- try(
-        run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
-                            embed.dim,diss_measure=diss_measure,
-                            
-                            graph.is.weighted=weighted.graph,
-                            graph.is.directed= graph.is.directed,
-                            preselected.seeds=preselected.seeds,
-                            preselected.test =preselected.test,
-                            w.vals =w.vals,
-                            return.list=TRUE,
-                            sep.err.w =sep.err.w,
-                            const.dim=const.dim
-        )
-      )
-      
-      if (inherits(corr.matches,"try-error")){
-        sink(paste("charity-error-debug",sample.int(10000,1),".txt",collapse=""))
-        print(traceback())
-        print(corr.matches)
-        sink()
+        Ac <- get.adjacency(found.conn.subgraph.1,attr="weight")
+        Ag <- get.adjacency(found.conn.subgraph.2,attr="weight")
+        v_count<- vcount(found.conn.subgraph.1)
+      } else{
+        Ac=Ajt1
+        Ag=Ajt2
+        
       }
       
-      #dimnames(corr.matches)[[1]]<-as.list(n_vals)
-      #dimnames(corr.matches)[[2]]<-paste("iteration",1:iter_per_core)
-      #dimnames(corr.matches)[[3]] <-as.list(w.vals)
-      corr.matches
+      
+      graph.is.directed <- TRUE
+      
+      Ac_graph <- Ac
+      Ag_graph <- Ag
+      
+      if (symmetrize){
+        graph.is.directed <- FALSE
+        Ac_graph <- (Ac+t(Ac))/2
+        Ag_graph <- (Ag+t(Ag))/2
+      }
+      
+      if (!weighted.graph) {
+        Ac_graph<- (Ac_graph>0)
+        Ag_graph<- (Ag_graph>0)
+      }
+      Ac_graph<- as.matrix(Ac_graph)
+      Ag_graph<- as.matrix(Ag_graph)
+      
+      num.cores<-parallel::detectCores()
+      iter_per_core <- ceiling(num_iter/num.cores)
+      require(foreach)
+      
+      if(seq){
+        registerDoSEQ()
+      } else if (.Platform$OS.type != "windows" && require("multicore")) {
+        require(doMC)
+        registerDoMC()
+      } else if (FALSE &&                     # doSMP is buggy
+                   require("doSMP")) {
+        workers <- startWorkers(num.cores,FORCE=TRUE) # My computer has 4 cores
+        on.exit(stopWorkers(workers), add = TRUE)
+        registerDoSMP(workers)
+      } else if (require("doSNOW")) {
+        cl <- snow::makeCluster(num.cores, type = "SOCK")
+        on.exit(snow::stopCluster(cl), add = TRUE)
+        registerDoSNOW(cl)
+      } else {
+        registerDoSEQ()
+      }  
+      
+      
+      corr_match_list<- foreach(i=1:num.cores, .combine="c",.export="run.experiment.JOFC") %dopar% {
+        
+        require(optmatch)
+        require(igraph)
+        require(MASS)
+        require(MCMCpack)
+        require(clue)
+        source("./lib/graph_embedding_fn.R")
+        source("./lib/simulation_math_util_fn.R")
+        source("./lib/smacofM.R")
+        source("./lib/oosIM.R")
+        source("./lib/oosMDS.R") #for tau.e function
+        source("./lib/diffusion_distance.R")
+        #		
+        corr.matches <- try(
+          run.experiment.JOFC(Ac_graph,Ag_graph,n_vals,num_iter=iter_per_core,
+                              embed.dim,diss_measure=diss_measure,
+                              
+                              graph.is.weighted=weighted.graph,
+                              graph.is.directed= graph.is.directed,
+                              preselected.seeds=preselected.seeds,
+                              preselected.test =preselected.test,
+                              w.vals =w.vals,
+                              return.list=TRUE,
+                              sep.err.w =sep.err.w,
+                              const.dim=const.dim
+          )
+        )
+        
+        if (inherits(corr.matches,"try-error")){
+          sink(paste("charity-error-debug",sample.int(10000,1),".txt",collapse=""))
+          print(traceback())
+          print(corr.matches)
+          sink()
+        }
+        
+        #dimnames(corr.matches)[[1]]<-as.list(n_vals)
+        #dimnames(corr.matches)[[2]]<-paste("iteration",1:iter_per_core)
+        #dimnames(corr.matches)[[3]] <-as.list(w.vals)
+        corr.matches
+      }
+      corr_match_list_agg <- c(corr_match_list_agg,corr_match_list)
     }
-    corr_match_list_agg <- c(corr_match_list_agg,corr_match_list)
+    
+    print (str(corr_match_list_agg))
+    
+    
+    return (corr_match_list_agg )
   }
   
-  print (str(corr_match_list_agg))
   
-  
-  return (corr_match_list_agg )
-}
-
