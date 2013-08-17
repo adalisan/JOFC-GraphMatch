@@ -733,7 +733,7 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 			w.vals  =  0.8,
 			oos.embed.n.at.a.time   =   sum(!in.sample.ind)/2,
 			mds.init.method="gower") {
-		min.correct.frac.for.full.seed<-0.95
+		min.correct.frac.for.full.seed<-0.9
 		oos.use.imputed <-   TRUE
 		w.max.index <-  length(w.vals)
 		# number of insample pairs
@@ -1503,11 +1503,11 @@ C_dice_weighted_SP_hybrid <- function(W,Graph){
   D<- matrix(0,n,n)
   for (i in 1:n) {
     for (j in 1:n) {
-      com.neigh_ij <- (W[i,]>0)&(W[j,]>0)
+      has.common.neighbors_ij <- (W[i,]>0)&(W[j,]>0)
       r_ij= sum((W[i,]* (W[i,]>0 &  W[j,]==0)))+ sum((W[j,]* (W[i,]==0 &  W[j,]>0)))-2*W[i,j]
-      a_ij <- sum((W[i,]+W[j,])*(com.neigh_ij))+2*W[i,j]
+      a_ij <- sum((W[i,]+W[j,])*(has.common.neighbors_ij))+2*W[i,j]
       #t <- ifelse(W[i,j]==0,1,0)
-      if ((sum(com.neigh_ij)>0)|(W[i,j]>0))
+      if ((sum(has.common.neighbors_ij)>0)|(W[i,j]>0))
           D[i,j] <- (r_ij+2*(W[i,j]==0))/(r_ij+a_ij+2)
       else{
         sp.paths <- shortest.paths(Graph,v=i)
@@ -1551,34 +1551,55 @@ C_dice_weighted_SP_hybrid <- function(W,Graph){
 		diag(D)<-0
 		return(5*D)
 	}
+# 
+# 
+# 
+# C_dice_weighted_SP_hybrid_in_out <- function(W,Graph){
+#  
+#     DissMat<-C_dice_weighted_in_out(W)
+#     no.common.neighbors<- which(DissMat==1,arr.ind=TRUE)
+#     for (i in unique(no.common.neighbors[,1])){
+#       sp.paths <- shortest.paths(Graph, v=i)
+#       indices <- which(no.common.neighbors[,1]==i)
+#       sp.paths [indices,no.common.neighbors[,2]]
+#     }
+#     
+#     
+#     return(DissMat)
+#  
+#   
+#   
+# }
 
-C_dice_weighted_SP_hybrid_in_out <- function(W,Graph){
+
+C_dice_weighted_SP_hybrid_in_out <- function(W,Graph=NULL){
+ 
   n<-nrow(W)
   diag(W)<-0
   D.in<- matrix(0,n,n)
-  Com.neigh <- matrix(FALSE,n,n)
+  has.common.neighbors <- matrix(FALSE,n,n)
   for (i in 1:n) {
     for (j in 1:n) {
-      com.neigh_ij <- (W[,i]>0)&(W[,j]>0)
+      has.common.neighbors_ij <- (W[,i]>0)&(W[,j]>0)
       r_ij= sum((W[,i]* (W[,i]>0 &  W[,j]==0)))+
         sum((W[,j]* (W[,i]==0 &  W[,j]>0)))-W[i,j]-W[j,i]
-      a_ij <- sum((W[,i]+W[,j])*(com.neigh_ij))+W[i,j]+W[j,i]
+      a_ij <- sum((W[,i]+W[,j])*(has.common.neighbors_ij))+W[i,j]+W[j,i]
       #t <- ifelse(W[i,j]==0,1,0)
       D.in[i,j] <- (r_ij+(W[i,j]==0)+(W[j,i]==0))/(r_ij+a_ij+2)
-      if (sum(com.neigh_ij >0)) {Com.neigh[i,j]<-TRUE}
+      if (sum(has.common.neighbors_ij )>0) {has.common.neighbors[i,j]<-TRUE}
     }
     
   }
   D.out<- matrix(0,n,n)
   for (i in 1:n) {
     for (j in 1:n) {
-      com.neigh_ij <- (W[i,]>0)&(W[j,]>0)
+      has.common.neighbors_ij <- (W[i,]>0)&(W[j,]>0)
       r_ij= sum((W[i,]* (W[i,]>0 &  W[j,]==0)))+ sum((W[j,]* (W[i,]==0 &  W[j,]>0)))-W[i,j]-W[j,i]
-      a_ij <- sum((W[i,]+W[j,])*(com.neigh_ij))+W[i,j]+W[j,i]
+      a_ij <- sum((W[i,]+W[j,])*(has.common.neighbors_ij))+W[i,j]+W[j,i]
       #t <- ifelse(W[i,j]==0,1,0)
       D.out[i,j] <- (r_ij+(W[i,j]==0)+(W[j,i]==0))/(r_ij+a_ij+2)
-      if (sum(com.neigh_ij >0)) {Com.neigh[i,j]<-TRUE}
-      if ((!Com.neigh[i,j])&(W[i,j]==0)&(W[j,i]==0)){
+      if (sum(has.common.neighbors_ij )>0) {has.common.neighbors[i,j]<-TRUE}
+      if ((!has.common.neighbors[i,j])&(W[i,j]==0)&(W[j,i]==0)){
 	 sp.paths <- shortest.paths(Graph,v=i)
 
         D.in[i,j] <- D.out[i,j]<- sp.paths[j]

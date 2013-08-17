@@ -702,7 +702,8 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
                                     preselected.seeds=NULL,preselected.test=NULL
                                     ,w.vals, seq=FALSE,
                                     subset=n,sep.err.w=TRUE,
-                                    rep.seeds=rep.seeds, const.dim=FALSE) {
+                                    rep.seeds=rep.seeds, const.dim=FALSE
+                                    ,legacy.func=FALSE) {
   
   require(Matrix)
   #options(error = browser)
@@ -752,7 +753,7 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
         found.neigh.size <-0
         prev.subgraph.1 <- v.cent 
         prev.subgraph.2 <- v.cent
-        for (k in 1:7){
+        for (k in 1:15){
           #look at kth neighborhood of v.cent in first.graph
           subgraph.1<-(graph.neighborhood(graph.1,order=k,nodes=v.cent))[[1]]
           subgraph.vert.1 <- V(subgraph.1)$name
@@ -789,6 +790,10 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
       found.conn.subgraph.1<- induced.subgraph(graph.1,vids=common.verts.select)
       found.conn.subgraph.2<- induced.subgraph(graph.2,vids=common.verts.select)
       
+      found.conn.subgraph.1<- giant.component(found.conn.subgraph.1)
+      found.conn.subgraph.2<- induced.subgraph(found.conn.subgraph.2,vids=V(found.conn.subgraph.1)$name)
+      
+      
         Ac <- get.adjacency(found.conn.subgraph.1,attr="weight")
         Ag <- get.adjacency(found.conn.subgraph.2,attr="weight")
         v_count<- vcount(found.conn.subgraph.1)
@@ -814,9 +819,13 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
         Ac_graph<- (Ac_graph>0)
         Ag_graph<- (Ag_graph>0)
       }
-      Ac_graph<- as.matrix(Ac_graph)
-      Ag_graph<- as.matrix(Ag_graph)
+      Ac_graph<- (Ac_graph)+0
+      Ag_graph<- (Ag_graph)+0
       
+      if  (diss_measure=="default"){
+        Ac_graph <- 1/Ac_graph
+        Ag_graph <- 1/Ag_graph
+      }
       num.cores<-parallel::detectCores()
       iter_per_core <- ceiling(num_iter/num.cores)
       require(foreach)
@@ -866,6 +875,7 @@ charitynet_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=9,weighted.graph=T
                               return.list=TRUE,
                               sep.err.w =sep.err.w,
                               const.dim=const.dim
+                              ,legacy.func=legacy.func
           )
         )
         

@@ -52,6 +52,11 @@ source("./src/JOFC-graph-experiment-sim-fn.R")
   source("./lib/diffusion_distance.R")
 
 
+if (!exists("legacy.func"))
+  legacy.func=TRUE
+
+if (!exists("const.dim"))
+  const.dim=TRUE
 
 if (!exists("n_vals"))
 n_vals=c(seq(20,100,20),seq(125,200,25))
@@ -71,7 +76,7 @@ corr.matches <-
                             diss_measure=diss_measure,symmetrize = symmetrize.graph,
 				preselected.seeds=NULL,preselected.test=NULL,w.vals=w.vals, seq=FALSE,
                                 subset=n,sep.err.w=use.separability.error.terms,
-                                rep.seeds=rep.seeds, const.dim=TRUE)
+                                rep.seeds=rep.seeds, const.dim=const.dim)
 			
 
 save.image(paste("JOFC-graph-",graph_data,"_param",Sys.getenv("SGE_TASK_ID")," at ",Sys.Date(),as.character(ceiling(runif(1)*100)),".Rdata"))
