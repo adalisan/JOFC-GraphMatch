@@ -76,7 +76,7 @@ corr.matches <-
                             diss_measure=diss_measure,symmetrize = symmetrize.graph,
 				preselected.seeds=NULL,preselected.test=NULL,w.vals=w.vals, seq=FALSE,
                                 subset=n,sep.err.w=use.separability.error.terms,
-                                rep.seeds=rep.seeds, const.dim=const.dim)
+                                rep.seeds=rep.seeds, const.dim=const.dim,legacy.func=legacy.func)
 			
 
 save.image(paste("JOFC-graph-",graph_data,"_param",Sys.getenv("SGE_TASK_ID")," at ",Sys.Date(),as.character(ceiling(runif(1)*100)),".Rdata"))
