@@ -34,8 +34,8 @@ if (is.null (paramsFile))
 
 
 paramsFile = paste("./src/JOFC-graph_",graph_data,"_Params_",Sys.getenv("SGE_TASK_ID"),".R",sep="",collapse="")
-print(paste("running" , graph_data," with the parameter file",sep=""))
-print(paramsFile)
+print(paste("running" , graph_data," with the parameter file ",paramsFile,sep=""))
+
 num.cpus <- parallel::detectCores()
 
 source(paramsFile)
@@ -96,8 +96,8 @@ save.image(paste("JOFC-graph-",graph_data,"_param",Sys.getenv("SGE_TASK_ID")," a
 
 library(R.matlab)
 
-R.matlab::writeMat("JOFC_enron_ECT.mat",
-JOFC_corr_enron_undir=corr.matches.e,n_vals_enron=n_vals,total_v=total_v)
+R.matlab::writeMat(paste("JOFC_enron_ECT",Sys.Date(),"-Params_",Sys.getenv("SGE_TASK_ID"),".mat",sep="")
+,JOFC_corr_enron_undir=corr.matches.e,n_vals_enron=n_vals,total_v=total_v)
 
 
 

@@ -1,14 +1,15 @@
-
 n <- 400
-n_vals <- c(50,150)
-diss_measure <- "jaccard"
+n_vals <- c(50,150,250)
+diss_measure <- "C_dice_weighted"
 w.vals <- c(0.8)
 starting.embed.dim <- 9
-graph.is.weighted <- FALSE
+graph.is.weighted <- TRUE
 symmetrize.graph <- TRUE
 subset <- NULL
 use.separability.error.terms <- TRUE
 T1 <- 130
 T2 <- 131 
-nmc <- 120
-rep.seeds <- 50
+nmc <- 10
+rep.seeds <- 8
+const.dim <- FALSE
+legacy.func <- TRUE

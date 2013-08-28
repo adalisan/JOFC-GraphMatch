@@ -62,18 +62,19 @@ run.in.linux<- .Platform$OS.type=="unix"
 
 
 corr.matches <-
-        worm_exp_par_sf(num_iter=num_iter,n_vals=n_vals,
+        worm_exp_par_sf_w(num_iter=num_iter,n_vals=n_vals,
                             embed.dim=starting.embed.dim, weighted.graph=graph.is.weighted,
                             diss_measure=diss_measure,symmetrize = symmetrize.graph,
 				preselected.seeds=NULL,preselected.test=NULL,w.vals=w.vals, seq=FALSE,
 				sep.err.w=use.separability.error.terms)
 avg.corr.worm <- corr.matches/(total_v-n_vals)
 
-save.image(paste("JOFC-graph-",graph_data,"_param",Sys.getenv("SGE_TASK_ID")," at ",Sys.Date(),as.character(ceiling(runif(1)*100)),".Rdata"))
+save.image(paste("JOFC-graph-",graph_data,"_param_",Sys.getenv("SGE_TASK_ID")
+,".at.",Sys.Date(),as.character(ceiling(runif(1)*100)),".Rdata",sep=""))
 
 library(R.matlab)
 
-R.matlab::writeMat(paste("JOFC-graph-",graph_data,"_param",Sys.getenv("SGE_TASK_ID"),".mat" ) ,
+R.matlab::writeMat(paste("JOFC-graph-",graph_data,"_param",Sys.getenv("SGE_TASK_ID"),".mat" ,sep="") ,
 JOFC_corr_worm=corr.matches,n_vals_worm=n_vals,total_v=total_v)
 
 
