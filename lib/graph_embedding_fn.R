@@ -498,7 +498,7 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 			oos.embed.n.at.a.time   =   sum(!in.sample.ind)/2,
 			mds.init.method="gower"){
 		
-		min.correct.frac.for.full.seed<-0.95
+		min.correct.frac.for.full.seed<-0.9
 		oos.use.imputed <-   TRUE
 		w.max.index <-  length(w.vals)
 		# number of insample pairs
@@ -575,6 +575,7 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 			
 			matching<- solve_LSAP(cost.mat)
 			all.matches <- as.matrix(matching)==1:num.pairs
+      # the first n are in-sample seeds
 			numTrueMatch <- sum(all.matches[1:n])
 			
 			print(paste(numTrueMatch," true matches  out of ", n," pairings"))
@@ -602,7 +603,7 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 		prevTrueMatch = -1
 		True.match.last.memory <- rep(-1,3)
 		
-		
+		# a more fine search for embedding dimension
 		Y.embeds<-list()
 		embed.dim <- embed.dim-dim.increment
 		while  (!full.seed.match) {
@@ -637,7 +638,7 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 			#numTrueMatch <-  tMatch.insample(insample.match,temp.ind)
 			
 			matching<- solve_LSAP(cost.mat)
-			all.matches <- as.matrix(matching) == 1:num.pairs
+			all.matches <- (as.matrix(matching) == 1:num.pairs)
 			numTrueMatch <- sum(all.matches[1:n])
 			print(paste(numTrueMatch," true matches  out of ", n  ," pairings"))
 			
@@ -697,9 +698,9 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 				#numTrueMatch <-  tMatch.insample(insample.match,temp.ind)
 				
 				matching<- solve_LSAP(cost.mat)
-				all.matches <- as.matrix(matching) == 1:num.pairs
-				numTrueMatch <- sum(all.matches[1:n])
-				print(paste(numTrueMatch," true matches  out of ", n  ," pairings"))
+				all.matches <- (as.matrix(matching) == 1:num.pairs)
+				numTrueMatch <- sum(all.matches[1:(n+all.m)])
+				print(paste(numTrueMatch," true matches  out of ", num.pairs  ," pairings"))
 				
 				
 				
@@ -807,11 +808,13 @@ graph2dissimilarity <- function (G,Gp,in.sample.ind,
 			oos.Weight.mat.w.2  <-   matrix(imp.weight,2*test.m,2*n)
 			
 		} else{
-			oos.Weight.mat.w  <-   rbind(cbind(matrix(imp.weight,n,test.m), matrix(0,n,test.m) ),
+			oos.Weight.mat.w  <-   rbind(cbind(matrix(imp.weight,n,test.m)
+                                         , matrix(0,n,test.m) ),
 					cbind(matrix(0,n,test.m),matrix(imp.weight,n,test.m))
 			)
 			
-			oos.Weight.mat.w.2  <-   rbind(cbind(matrix(imp.weight,test.m,n), matrix(0,test.m,n) ),
+			oos.Weight.mat.w.2  <-   rbind(cbind(matrix(imp.weight,test.m,n)
+                                           , matrix(0,test.m,n) ),
 					cbind(matrix(0,test.m,n),matrix(imp.weight,test.m,n))
 			)
 			

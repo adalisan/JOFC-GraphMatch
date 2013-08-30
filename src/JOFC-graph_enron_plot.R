@@ -3,6 +3,7 @@ library(reshape2)
 
 
 corr.results.unlist.agg<-corr.matches.e
+n<-total_v
 
 corr.results.avg<-Reduce("+",corr.results.unlist.agg)/nmc
 corr.results.var<-lapply(corr.results.unlist.agg,function(x){(x-corr.results.avg)^2})
@@ -12,7 +13,7 @@ corr.results.sd<-sqrt(corr.results.var)
 
 corr.results.avg.frac <- sweep( corr.results.avg,1,n-n_vals,"/")
 corr.results.sd.frac <- sweep( corr.results.sd,1,n-n_vals,"/")
-n<-total_v
+
 
 
 

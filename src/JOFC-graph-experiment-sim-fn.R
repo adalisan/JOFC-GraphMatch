@@ -318,7 +318,7 @@ wiki_exp <- function(num_iter,n_vals,embed.dim=13) {
 
 worm_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                               diss_measure="C_dice_weighted",symmetrize=TRUE,
-                              preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,sep.err.w=TRUE) {
+                              preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,sep.err.w=TRUE,const.dim=FALSE) {
   
   load("./data/celegansGraph.Rd")
   
@@ -454,7 +454,7 @@ enron_exp <- function (num_iter,n_vals_vec,embed.dim=2){
 
 enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                                diss_measure="C_dice_weighted",symmetrize=TRUE,
-                               preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,T1=130,T2=131,sep.err.w=TRUE) {
+                               preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,T1=130,T2=131,sep.err.w=TRUE,const.dim=FALSE) {
   
   load("./data/AAA-187As-184x184.Rbin")
   Ac=AAA[[T1]]
@@ -554,6 +554,7 @@ enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                           w.vals =w.vals,
                           return.list=TRUE,
                           sep.err.w =sep.err.w
+                          ,const.dim=const.dim
       )
     )
     #dimnames(corr.matches)[[1]]<-as.list(n_vals)
@@ -579,7 +580,7 @@ enron_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
 
 wiki_exp_par_sf_w <- function(num_iter,n_vals,embed.dim=3,weighted.graph=TRUE,
                               diss_measure="C_dice_weighted",symmetrize=TRUE,
-                              preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,subset=NULL,sep.err.w=TRUE) {
+                              preselected.seeds=NULL,preselected.test=NULL,w.vals, seq=FALSE,subset=NULL,sep.err.w=TRUE,const.dim=FALSE) {
   
   
   
