@@ -1,5 +1,5 @@
 
-n <- 300 
+n <- 400 
 n_vals <- c(seq(20,100,20),seq(125,200,25))
 diss_measure <- "hybrid_DICE_SP"
 w.vals <- c(0.8,0.9)

@@ -1,10 +1,10 @@
 
 n <- 300
-n_vals <- c(50)
+n_vals <- c(50,150)
 diss_measure <- "ECT"
 w.vals <- c(0.8)
-starting.embed.dim <- 6
-graph.is.weighted <- FALSE
+starting.embed.dim <- 9
+graph.is.weighted <- TRUE
 symmetrize.graph <- TRUE
 subset <- NULL
 use.separability.error.terms <- TRUE

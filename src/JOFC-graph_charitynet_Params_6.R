@@ -1,5 +1,5 @@
 
-n <- 300
+n <- 400
 n_vals <- c(10,25,50,100,150,200)
 diss_measure <- "invlogweighted"
 w.vals <- c(0.8)

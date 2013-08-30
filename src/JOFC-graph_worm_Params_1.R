@@ -1,7 +1,7 @@
 
 n <- 300 
 n_vals <- c(seq(20,100,20),seq(125,200,25))
-diss_measure <- "hybrid_DICE_SP"
+diss_measure <- "C_dice_weighted"
 w.vals <- c(0.8)
 starting.embed.dim <- 6
 graph.is.weighted <- FALSE
