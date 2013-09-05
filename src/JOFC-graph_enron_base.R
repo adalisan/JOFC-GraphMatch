@@ -93,11 +93,13 @@ corr.results.unlist <- corr.matches.e
 
 save.image(paste("JOFC-graph-",graph_data,"_param",Sys.getenv("SGE_TASK_ID")," at ",Sys.Date(),as.character(ceiling(runif(1)*100)),".Rdata"))
 
+corr.matches.e.mat<- Reduce(x=corr.matches.e,f=cbind)
+corr.matches.e.mat<- t(corr.matches.e.mat)
 
 library(R.matlab)
 
-R.matlab::writeMat(paste("JOFC_enron_ECT",Sys.Date(),"-Params_",Sys.getenv("SGE_TASK_ID"),".mat",sep="")
-,JOFC_corr_enron_undir=corr.matches.e,n_vals_enron=n_vals,total_v=total_v)
+R.matlab::writeMat(paste("JOFC_enron",Sys.Date(),"-Params_",Sys.getenv("SGE_TASK_ID"),".mat",sep="")
+,JOFC_corr_enron_undir=corr.matches.e.mat,n_vals_enron=n_vals,total_v=total_v)
 
 
 

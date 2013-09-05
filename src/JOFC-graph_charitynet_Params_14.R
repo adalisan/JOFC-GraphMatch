@@ -1,5 +1,5 @@
 n <- 400
-n_vals <- c(50,150,250)
+n_vals <- c(50,75,100,150,200,250,275,300,325)
 diss_measure <- "C_dice_weighted"
 w.vals <- c(0.8)
 starting.embed.dim <- 40
@@ -9,7 +9,7 @@ subset <- NULL
 use.separability.error.terms <- TRUE
 T1 <- 130
 T2 <- 131 
-nmc <- 10
+nmc <- 20
 rep.seeds <- 50
 const.dim <- TRUE
 legacy.func <- TRUE

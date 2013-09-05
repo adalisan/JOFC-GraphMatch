@@ -38,9 +38,14 @@ names(corr.results.lf)<- c("m","w","value")
 corr.summ<-summarySE(data=corr.results.lf,measurevar="value",groupvar=c("w","m"))
 
 
-ggplot(corr.summ, aes(x=m, y=value, colour=w)) + 
+first.plot<- ggplot(corr.summ, aes(x=m, y=value, colour=w)) + 
   geom_errorbar(aes(ymin=value-ci, ymax=value+ci),size=1, width=6) +
   geom_point(size=2)+geom_line(size=1.2)+theme_minimal()+theme(text=element_text(size=22)) +
-  labs(title=paste("JOFC",graph_data),x=expression(m),y=((expression(delta^{(m)}))))+scale_x_continuous(breaks=seq(0,300,25)) +
-  scale_y_continuous(breaks=seq(0,1,.2)) +
+  labs(title=paste("JOFC",graph_data),x=expression(m),y=((expression(delta^{(m)}))))+scale_x_continuous(breaks=seq(0,180,25),limits=c(20,180)) +
+  scale_y_continuous(breaks=seq(0,1,.1),limits=c(0,1)) +
   guides(colour=guide_legend( title =expression(w),title.hjust=1,title.vjust=-1,label.hjust=1))
+
+
+first.plot<- first.plot+geom_errorbar(data=corr.summ, aes(ymin=value-ci, ymax=value+ci),size=1, width=6,colour="green") 
+
+
