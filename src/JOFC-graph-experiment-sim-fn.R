@@ -72,8 +72,8 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
         M.result.l<- solve_LSAP(jofc.res.l)
         num_matched_v<-test.m
         if (!is.null(preselected.test)){
-          corr_matched_v <-as.matrix(M.result.l)==1:test.m
-          preselected.log<-rep(F,N)
+          corr_matched_v  <- as.matrix(M.result.l)==1:test.m
+          preselected.log <- rep(F,N)
           preselected.log[preselected.test]<-T
           preselected.new.index <- which(preselected.log[-preselected.seeds])
           
@@ -81,9 +81,11 @@ run.experiment.JOFC <- function(G,Gp,n_vals,num_iter,embed.dim,diss_measure='C_d
           num_matched_v <- length(preselected.test)
         }
         else{
-          
-          
-          NumofTruePairing.l <- sum(as.matrix(M.result.l)==1:test.m)
+          #are the true matches more likely to have higher weights compared to average
+          match.comparison.with.truth <- as.matrix(M.result.l)==1:test.m
+          true.matches <- which(match.comparison.with.truth)
+          #insample_logic_vec[!true.matches ]
+                 NumofTruePairing.l <- sum(match.comparison.with.truth)
         }
         
         print(paste(NumofTruePairing.l," out of ", num_matched_v,sep="",collapse=""))
