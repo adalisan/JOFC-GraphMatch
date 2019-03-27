@@ -12,3 +12,11 @@ data/*.RData
 .Rproj.user
 charity-error-debug*.txt
 debug*.txt
+/data/*.RData
+/data/*.Rbin
+.Rproj.user
+charity-error*.txt
+*.Rout
+*.mat
+*.gml
+*.Rdata
