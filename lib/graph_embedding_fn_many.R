@@ -1,7 +1,9 @@
 
-JOFC.Insample.Embed.many.match <-function(D1,D2,D.W,ndimens,
-		w.vals,sep.err.w,
-		init.conf,wt.equalize){
+
+JOFC.Insample.Embed.many.match <-function(D1, D2, D.W, ndimens,
+		w.vals, sep.err.w,
+		init.conf, wt.equalize, 
+		debug.mode=FALSE, debug.mode.fine=FALSE ){
 	#	if (profile.mode) Rprof("JOFC.FC.out",append=TRUE)
 	n.1<- nrow(D1)
 	n.2<- nrow(D2)
@@ -29,7 +31,7 @@ JOFC.Insample.Embed.many.match <-function(D1,D2,D.W,ndimens,
 			W.W<-matrix(0,n.1,n.2)
 		W.W[D.W==0]<-w
 		
-		if (debug.mode) {
+		if (debug.mode.fine) {
 			print(head(W.W))
 			print("Number of w terms")
 			print(sum(W.W==w))
@@ -251,7 +253,8 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
 		vert_diss_measure  =  "default",
 		T.param  =  NULL,
 		
-		graph.is.weighted=FALSE   )  {
+		graph.is.weighted=FALSE ,
+		debug.mode=FALSE, debug.mode.fine=FALSE  )  {
 	##################################################
 #   JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
 #                                             in.sample.ind.1,in.sample.ind.2,
@@ -276,8 +279,10 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
 	weighted.g <- graph.is.weighted
 	if (!weighted.g)
 		weighted.g<-NULL
+	if (is.na(debug.mode.fine)  && debug.mode.fine) {
 	print("T.param")
 	print(T.param)
+	}
 	
 	
 	
@@ -314,7 +319,9 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
 			wt.equalize=FALSE,
 			use.separability.dissim = TRUE,
 			assume.matched.for.oos = FALSE ,
-			w.vals=w.vals.vec)
+			w.vals=w.vals.vec,
+			debug.mode=FALSE,
+		    debug.mode.fine=FALSE)
 	
 	
 	
@@ -322,14 +329,11 @@ JOFC.graph.custom.dist.many  <-   function(G,Gp,corr.list,
 	J <-  list()
 	for (Y.embed in Embed.List){
 		
-		
 		Dist  <-  as.matrix(dist(Y.embed))[(1:test.m.2)+test.m.1,1:test.m.1]
 		rownames(Dist)<-paste("single",which(!(in.sample.ind.2[1:n.2])))
 		colnames(Dist)<-paste("many",which(!(in.sample.ind.1[1:n.1])))
 		
-		
 		J <-  c(J,list(Dist))
-		
 	}
 	return(J)
 	
@@ -354,7 +358,7 @@ JOFC.graph.diff.many <-  function(G,Gp,corr.list,
 		w.vals.vec,
 		graph.is.directed  =  FALSE,
 		T.param  =  2){
-	return(JOFC.graph.custom.dist.many(G  =  G,Gp  =  Gp, corr.list= corr.list,in.sample.ind  =  in.sample.ind,d.dim  =  d.dim,w.vals.vec  =  w.vals.vec,
+	  return(JOFC.graph.custom.dist.many(G  =  G,Gp  =  Gp, corr.list= corr.list,in.sample.ind  =  in.sample.ind,d.dim  =  d.dim,w.vals.vec  =  w.vals.vec,
 					graph.is.directed  =  graph.is.directed,vert_diss_measure  =  "diffusion",T.param  =  T.param))
 	
 }
@@ -362,150 +366,6 @@ JOFC.graph.diff.many <-  function(G,Gp,corr.list,
 
 
 
-jofc.many<-function(G,Gp,corr.list,
-		in.sample.ind.1,in.sample.ind.2,
-		d.dim,
-		w.vals.vec,
-		graph.is.directed=FALSE,
-		oos=TRUE,
-		notconnect.wt=10,
-		use.weighted.graph=TRUE,
-		wt.matrix.1=NULL,
-		wt.matrix.2=NULL,
-		sep.graphs=TRUE # if TRUE, treat two graphs separately to compute dissimilarities
-#and impute W (off-diagonalblock matrix)
-# if FALSE, join the graphs and compute dissimilarities from joint graph
-
-){
-	
-	stop("Obsolete function")
-	n.1<-nrow(G)
-	n.2<-nrow(Gp)
-	test.m.1<-sum(!in.sample.ind.1)
-	test.m.2<-sum(!in.sample.ind.2)
-	
-	
-	graph.mode<- ifelse(graph.is.directed,"directed","undirected")
-	
-	Graph.1<-graph.empty(directed=graph.is.directed)
-	Graph.2<-graph.empty(directed=graph.is.directed)
-	Graph.M<-graph.empty(directed=graph.is.directed)
-	
-	if (!use.weighted.graph) {
-		#Given adjacency matrix, generate unweighted graph
-		print("Using adjacency for computing dissimilarities")
-		Graph.1<-graph.adjacency(G, mode=graph.mode)
-		Graph.2<-graph.adjacency(Gp,mode=graph.mode)
-		A.M<- matrix(0,n.1,n.2)
-		for (corr.i in corr.list){
-			for ( i in corr.i[[1]]){
-				for ( j in corr.i[[2]]){
-					A.M[i,j]<-1
-				}
-			}
-		}
-		G.comb<-omnibusM(G,Gp,A.M)
-		Graph.M <- graph.adjacency(G.comb,
-				weighted= NULL ,mode=graph.mode)
-	} else{
-		print("Using weighted graph for computing dissimilarities")
-		# If creating  a weighted graph 
-		# make the weight matrix from adjacency matrix. Those with same-condition edges have weights of wt.connect/10
-		#those  with no edges have weights of wt.connect. Those with "matched edges has weights of matched.cost
-		A.M<- matrix(500,n.1,n.2)
-		for (corr.i in corr.list){
-			for ( i in corr.i[[1]]){
-				for ( j in corr.i[[2]]){
-					A.M[i,j]<-matched.cost
-				}
-			}
-		}    
-		
-		
-		#A.M[!in.sample.ind[1:n]]<- 0
-		if (is.null(wt.matrix.1)){
-			#Given adjacency matrix, generate weighted graph
-			wt.matrix.1 <- G
-			wt.matrix.2 <- Gp
-			wt.matrix.1[G==0] <- notconnect.wt
-			wt.matrix.2[Gp==0] <- notconnect.wt						
-			wt.matrix.1[G==1] <- notconnect.wt/10			
-			wt.matrix.2[Gp==1] <- notconnect.wt/10
-			G.comb.w<-omnibusM(wt.matrix.1,wt.matrix.2,A.M)
-			
-			if (sep.graphs){
-				Graph.1<-graph.adjacency(wt.matrix.1, weighted= TRUE , mode=graph.mode)
-				Graph.2<-graph.adjacency(wt.matrix.2, weighted= TRUE , mode=graph.mode)
-			}			else{
-				stop("This case is not implemented")
-				
-			}
-		}
-		else{  #if wt.matrix.1 is not null
-			
-			if (sep.graphs){
-				#Given weight matrix, generate weighted graph                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  
-				Graph.1<-graph.adjacency(wt.matrix.1 ,weighted=TRUE,mode= graph.mode)
-				Graph.2<-graph.adjacency(wt.matrix.2,weighted=TRUE,mode=graph.mode)
-				
-				#Don't need to compute Graph.M
-				
-			}
-			else{
-				stop("This case not implemented")
-			}
-		}
-		
-	}
-	
-	#Now that graphs are generated from adjacency or weight matrices,
-	# compute dissimilarities using shortest.paths	
-	
-	if (sep.graphs){
-		
-		#compute dissimilarities in separate graphs, then impute dissimilarity between different condition
-		D.1<-shortest.paths(Graph.1)
-		D.2<-shortest.paths(Graph.2)
-		D.1[is.infinite(D.1)]<-NA
-		D.2[is.infinite(D.2)]<-NA
-		D.w<- matrix(NA,n.1,n.2)
-		for (corr.i in corr.list){
-			for ( i in corr.i[[1]]){
-				for ( j in corr.i[[2]]){
-					D.w[i,j]<-matched.cost
-				}
-			}
-		}
-		D.M<- omnibusM(D.1,D.2,D.w)
-		
-	}
-	else{
-		stop("This case is not implemented")
-	}
-	#print("max(D.M)")
-	#print(max(D.M))
-	
-	
-	Embed.List<-Embed.Nodes.to.Match.many(D.M[1:n.1,1:n.1],D.M[n.1+(1:n.2),n.1+(1:n.2)],D.M[1:n.1,n.1+(1:n.2)],
-			
-			in.sample.ind.1,in.sample.ind.2 ,oos ,
-			d=d.dim,
-			wt.equalize=FALSE,
-			use.separability.dissim=FALSE,
-			assume.matched.for.oos = FALSE,
-			w.vals=w.vals.vec)	
-	
-	
-	J<-list()
-	for (Y.embed in Embed.List){
-		print("dim(Y.embed)")
-		print(dim(Y.embed))	
-		Dist=as.matrix(dist(Y.embed))[1:test.m.1,(1:test.m.2)+test.m.1]
-		J<-c(J,list(Dist))
-		
-	}
-	return(J)
-}
 
 
 
@@ -514,17 +374,17 @@ jofc.many<-function(G,Gp,corr.list,
 
 
 
-
-Embed.Nodes.to.Match.many <-function(D.Mats,
+Embed.Nodes.to.Match.many <- function(D.Mats,
 		in.sample.ind.1,
 		in.sample.ind.2,
 		corr.list,
-		
 		d.start,
 		wt.equalize=FALSE,
 		use.separability.dissim = TRUE,
 		assume.matched.for.oos = FALSE ,
-		w.vals=0.99){
+		w.vals=0.99 ,
+		debug.mode=FALSE,
+		debug.mode.fine=FALSE){
 	mds.init.method <- "gower"
 	D.1 <- D.Mats$D.1
 	D.2 <- D.Mats$D.2
@@ -640,28 +500,30 @@ Embed.Nodes.to.Match.many <-function(D.Mats,
 		}
 		
 		
-		print("dim(X.embeds[[1]])")
-		print(dim(X.embeds[[1]]))
+
 		
 		pw.dist.insample <- as.matrix(dist(X.embeds[[1]]))
 		dist.matrix <- (pw.dist.insample[n.1.in+(1:n.2.in), 1:n.1.in])
 		rownames(dist.matrix)<-paste("single",in.indices.2.for.2)
 		colnames(dist.matrix)<-paste("many",in.indices.1)
-		
+		if (debug.mode.fine) {
 		print("dist.matrix")
 		print(head(dist.matrix))
 		print("diag of dist.matrix")
 		print(diag(dist.matrix))
+		}
 		
 		insample.match <-   fullmatch(dist.matrix,min.controls=1,max.controls=10)
 		
 		insample.perf <- present.many(insample.match,
 				corr.list=corr.list)
 		
+		if (debug.mode) {
 		print("performance for insample matching")
 		print (paste(c(embed.dim, summary(insample.perf$F)),collapse=" "))
 		print (paste(c(embed.dim, summary(insample.perf$R)),collapse=" "))
 		print (paste(c(embed.dim, summary(insample.perf$P)),collapse=" "))
+		}
 		
 		if (mean(insample.perf$F)>0.95) full.seed.match <- TRUE
 		
@@ -689,17 +551,19 @@ Embed.Nodes.to.Match.many <-function(D.Mats,
 	
 	
 	for (l in 1:w.max.index){
-		if (verbose) print("OOS embedding for JOFC for w= \n")
+		if (debug.mode) print("OOS embedding for JOFC for w= \n")
 		
 		
 		w.val.l <- w.vals[l]
 		X <- X.embeds[[l]]
 		Y.w <- matrix(0,test.m,embed.dim)
+		if (debug.mode.fine) {
 		print("embed.dim")
 		print(embed.dim)
-		print("X")
+		print("X and dimX")
 		print(str(X))
 		print(dim(X))
+		}
 		
 		#Compute Weight matrix corresponding in-sample  entries
 		# Since we are going to oos-embedding, set the weights  of in-sample embedding of stress
@@ -724,7 +588,7 @@ Embed.Nodes.to.Match.many <-function(D.Mats,
 			oos.Weight.mat[is.na(omnibus.oos.D.0)]<-0
 			omnibus.oos.D.0[is.na(omnibus.oos.D.0)]<-1
 			
-			if (verbose) print("JOFC null omnibus OOS embedding \n")
+			if (debug.mode) print("JOFC null omnibus OOS embedding \n")
 			
 			Y.0t<- tryCatch(oosIM(D=omnibus.oos.D.0,
 							X=X,
@@ -747,7 +611,7 @@ Embed.Nodes.to.Match.many <-function(D.Mats,
 		
 		
 		
-		if (verbose) print("JOFC alternative omnibus OOS embedding \n")
+		if (debug.mode) print("JOFC alternative omnibus OOS embedding \n")
 		Y.embeds<-c(Y.embeds,list(Y.w))
 	}
 	
