@@ -4,6 +4,8 @@ debug.mode.fine <-FALSE
 require(igraph)
 require(optmatch)
 require(MASS)
+require(here)
+#setwd(here())
 source("./lib/simulation_math_util_fn.R")
 source("./lib/smacofM.R")
 source("./lib/oosIM.R")
@@ -21,7 +23,7 @@ a.cep <-20
 
 n<- 100
 m = 20 # number of test nodes in the second graph that  are to-be-matched
-m_vals <- c(10,20,50,80,90)
+m_vals <- c(10,20,35,50,70,80,90)
 m_len <- length(m_vals)
 
 pert=(0:5)/10
@@ -29,7 +31,9 @@ pert= c(0,0.1,0.3,0.5)
 
 npert <-  length(pert)
 
-nc.jofc.dice.wt.p <- nc.jofc.dice.wt.r <- nc.jofc.dice.wt.f <- array(0,dim=c(npert,nmc,m_len))
+nmc <- 25
+
+nc.jofc.dice.wt.p <- nc.jofc.dice.wt.r <- nc.jofc.dice.wt.f <-  nc.jofc.dice.wt.tm <- array(0,dim=c(npert,nmc,m_len))
 
 
 nc.cmds = matrix(0,npert,nmc)
@@ -48,10 +52,12 @@ matched.cost<-0.01 #If matched.cost is equal to 1, consider an unweighted graph,
 
 d.start <- 12
 T.diff<-2
-
-dims.for.dist <- 1:d.dim
+vertex_dissimilarity_measure <- 'C_dice_weighted'
+# vertex_dissimilarity_measure <- 'default'
+dims.for.dist <- 1:d.start
 
 seed<-123
+
 
 
 gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
@@ -94,8 +100,6 @@ gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
 
 
 
-nmc <- 25
-
 
 
 for(imc in 1:nmc)
@@ -136,7 +140,7 @@ for(imc in 1:nmc)
                                         d.dim=d.start,
                                         w.vals.vec=w.vals.vec,
                                         graph.is.directed=FALSE,
-                                        vert_diss_measure  =  'C_dice_weighted',
+                                        vert_diss_measure  = vertex_dissimilarity_measure,
                                         T.param  =  NULL,
                                         
                                         graph.is.weighted=TRUE)
@@ -173,6 +177,9 @@ for(imc in 1:nmc)
   }
 }
 
+
+
+save.image(paste("JOFC-bitflip_sim_100_1_k_match_generated",Sys.Date(),as.character(ceiling(runif(1)*10000)),".Rdata"))
 
 
 pdf("./graphs/plot-PRF2.pdf")
