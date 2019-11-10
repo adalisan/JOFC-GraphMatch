@@ -52,12 +52,13 @@ matched.cost<-0.01 #If matched.cost is equal to 1, consider an unweighted graph,
 
 d.start <- 12
 T.diff<-2
-vertex_dissimilarity_measure <- 'C_dice_weighted'
-# vertex_dissimilarity_measure <- 'default'
+#vertex_dissimilarity_measure <- 'C_dice_weighted'
+
+vertex_dissimilarity_measure <- 'default'
 dims.for.dist <- 1:d.start
 
 seed<-123
-clone.to.get.k.matches <- FALSE
+clone.to.get.k.matches <- TRUE
 
 
 
@@ -151,6 +152,7 @@ gen.1.to.k.matched.graphs.clones <- function(n,pert,repeat.counts) {
 
 for(imc in 1:nmc)
 {
+  print (paste0("Simulation iteration ", as.character(imc), " started"))
   repeat.counts <-1+rgeom(n,0.2)
   repeat.counts[repeat.counts>10]=10;
   #  repeat.counts <-rep(1,n)
@@ -228,12 +230,14 @@ for(imc in 1:nmc)
     
     
   }
+  print (paste0("Simulation iteration ", as.character(imc), " ended"))
 }
 
 
 
 save.image(paste("JOFC-bitflip_sim_100_1_k_match_generated",Sys.Date(),as.character(ceiling(runif(1)*10000)),".Rdata"))
 
+print("Generating the results plot ")
 
 pdf("./graphs/plot-PRF2.pdf")
 colors.vec<-c( "red","blue","orange","green")
