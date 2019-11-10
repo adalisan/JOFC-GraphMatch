@@ -18,6 +18,7 @@ oos.cep = TRUE
 
 a.cep <-20
 
+vertex_dissimilarity_measure <- "default"
 
 n<- 100
 m = 20 # number of test nodes in the second graph that  are to-be-matched
@@ -137,7 +138,7 @@ for(imc in 1:nmc)
                                         d.dim=d.start,
                                         w.vals.vec=w.vals.vec,
                                         graph.is.directed=FALSE,
-                                        vert_diss_measure  =  'default',
+                                        vert_diss_measure  = vertex_dissimilarity_measure,
                                         T.param  =  NULL,
                                         
                                         graph.is.weighted=TRUE)
