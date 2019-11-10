@@ -14,7 +14,7 @@ source("./lib/graph_embedding_fn_many.R")
 verbose= FALSE
 
 
-
+vertex_dissimilarity_measure <- "default"
 
 
 nmc <- 1
@@ -51,6 +51,7 @@ matched.cost<-0.01 #If matched.cost is equal to 1, consider an unweighted graph,
 d.start <- 12
 T.diff<-2
 
+clone.to.get.k.matches <- TRUE
 gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
   npert <-  length(pert)
   G.orig<-ER(n,0.5)
@@ -148,9 +149,13 @@ for(imc in 1:nmc)
   
   
   #toggle later
-  
+  if (clone.to.get.k.matches) {
+      gen.graph.pair <- gen.1.to.k.matched.graphs.clones(n,pert,repeat.counts)
+  } else {
+      gen.graph.pair <- gen.1.to.k.matched.graphs(n,pert,repeat.counts)
+ 
+  }
   #gen.graph.pair <- gen.1.to.k.matched.graphs(n,pert,repeat.counts)
-  gen.graph.pair <- gen.1.to.k.matched.graphs.clones(n,pert,repeat.counts)
   G.list <- gen.graph.pair$G
   Gp.list <- gen.graph.pair$Gp.list
   corr.list <- gen.graph.pair$corr.list
@@ -181,7 +186,7 @@ for(imc in 1:nmc)
                                         d.dim=d.start,
                                         w.vals.vec=w.vals.vec,
                                         graph.is.directed=FALSE,
-                                        vert_diss_measure  =  'default',
+                                        vert_diss_measure  =  vertex_dissimilarity_measure,
                                         T.param  =  NULL,
                                         
                                         graph.is.weighted=TRUE)

@@ -57,6 +57,7 @@ vertex_dissimilarity_measure <- 'C_dice_weighted'
 dims.for.dist <- 1:d.start
 
 seed<-123
+clone.to.get.k.matches <- FALSE
 
 
 
@@ -100,6 +101,52 @@ gen.1.to.k.matched.graphs <- function(n,pert,repeat.counts) {
 
 
 
+gen.1.to.k.matched.graphs.clones <- function(n,pert,repeat.counts) {
+  npert <-  length(pert)
+  G.orig<-ER(n,0.5)
+  diag(G.orig)<-1
+  
+  
+  int.end.indices<-cumsum(repeat.counts)
+  int.start.indices<-c(1,int.end.indices+1)
+  corr.list<-vector("list",n)
+  
+  Gp<-G.orig
+  G.list <- list()
+  Gp.list <- list()
+
+  for(ipert in 1:npert)
+  {
+    k<-1
+  G.bf<-bitflip(G.orig ,pert[ipert],pert[ipert])
+  G<-matrix(0,new.n <- sum(repeat.counts),new.n)
+  for (i in 1:n){
+    for (j in 1:repeat.counts[i]){
+      G[k,]<-rep(G.bf[i,],times=repeat.counts)
+      G[,k]<-rep(G.bf[i,],times=repeat.counts)
+      #  G<-perturbG(G,0.1)
+      k <- k+1
+    }
+    corr.list[[i]] <- list(a=(int.start.indices[i]:int.end.indices[i]),b=i)
+  }
+  
+  diag(G.orig)<-0
+  diag(G)<-0
+
+  
+    
+    #Gp<-bitflip(G.orig ,pert[ipert],pert[ipert])
+    
+    Gp.list<-c(Gp.list,list(G.orig))
+    
+    G.list<-c(G.list,list(G))
+  }
+  return(list(G=G.list,Gp.list=Gp.list,   corr.list=corr.list,
+              int.start.indices = int.start.indices,
+              int.end.indices = int.end.indices))
+}
+
+
 
 
 for(imc in 1:nmc)
@@ -108,8 +155,14 @@ for(imc in 1:nmc)
   repeat.counts[repeat.counts>10]=10;
   #  repeat.counts <-rep(1,n)
   new.n <- sum(repeat.counts)
+  if (clone.to.get.k.matches) {
+      gen.graph.pair <- gen.1.to.k.matched.graphs.clones(n,pert,repeat.counts)
+  } else {
+      gen.graph.pair <- gen.1.to.k.matched.graphs(n,pert,repeat.counts)
+ 
+  }
+
   
-  gen.graph.pair <- gen.1.to.k.matched.graphs(n,pert,repeat.counts)
   G.list <- gen.graph.pair$G
   Gp.list <- gen.graph.pair$Gp.list
   corr.list <- gen.graph.pair$corr.list
