@@ -6,6 +6,9 @@
 logs/
 cache/
 graphs/
-
-/data/*.RData
+data/*.mat
+data/agdata
+data/*.RData
 .Rproj.user
+charity-error-debug*.txt
+debug*.txt
