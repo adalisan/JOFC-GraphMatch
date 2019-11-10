@@ -9,7 +9,7 @@ smacofM <- function(D,
                     verbose = FALSE,
                     itmax   = 1000,
                     eps     = 1e-6,
-					debug.mode =FALSE)
+                    debug.mode =FALSE)
 {
   
   n <- nrow(D)
@@ -38,13 +38,14 @@ smacofM <- function(D,
   if ((sum(is.null(X))>0) |(sum(is.na(X))>0)| (sum(is.infinite(X))>0)| (ncol(X)==0)) {
     X <- mvrnorm(n, mu = rep(0,ndim), Sigma = max(D,na.rm=TRUE)*diag(ndim))
     X <- matrix(X, nrow=n, ncol=ndim)
-    if (debug.mode)  {sink("debug.X.n.txt")
-                      print(D)
-                      print(ndim)
-                      print(X)
-                      print(str(X))
-                      
-                      sink()
+    if (debug.mode)  {
+      sink("debug.X.n.txt")
+      print(D)
+      print(ndim)
+      print(X)
+      print(str(X))
+      
+      sink()
     }
   }
   if (debug.mode)  {
@@ -58,7 +59,7 @@ smacofM <- function(D,
   rownames(X) <- NULL
   V <- -W
   diag(V) <- rowSums(W)
-  if (verbose){
+  if (debug.mode){
     
     print(V)
     print(W)
@@ -71,7 +72,7 @@ smacofM <- function(D,
     print(X)
     print(distE)
     sink()
-    stop("invalid distE: strees can't be computed")}
+    stop("invalid distE: strees can't be computed. X and distE written to debug.distE.txt  ")}
   
   stressOld <- sum(distW * (distD - distE)^2)
   if ((is.null(stressOld))|(is.na(stressOld))) {
